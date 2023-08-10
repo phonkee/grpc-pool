@@ -36,6 +36,13 @@ import (
 	"time"
 )
 
+const (
+	// ChosenContextDeadline is returned from Select when context deadline is reached
+	ChosenContextDeadline = iota
+	// ChosenAcquireTimeout is returned from Select when acquire timeout is reached
+	ChosenAcquireTimeout
+)
+
 // New creates a new pool of gRPC connections.
 // Options can be passed to configure the pool.
 func New(dialFunc DialFunc, opts ...Option) (*Pool, error) {
@@ -89,17 +96,29 @@ type Pool struct {
 // Acquire returns a connection from the pool. After using the connection, the caller must call Release, otherwise
 // pool will be starved and will create new connections, and eventually will exhaust the resources.
 func (p *Pool) Acquire(ctx context.Context) (*grpc.ClientConn, error) {
+
+	var (
+		chosen int
+		recv   reflect.Value
+		ok     bool
+	)
+
 outer:
 	for {
 		// get all the cases we want to select on
 		cases := p.cases(ctx)
 
-		// we are selecting on multiple channels, we need to get the index of the channel that was selected
-		// to decide if it was timeout channel or any other channel with connection
-		chosen, recv, ok := reflect.Select(cases)
+		// if we have more than 2 cases, it means we already have some connections in the pool
+		if len(cases) > 2 {
+			// we are selecting on multiple channels, we need to get the index of the channel that was selected
+			// to decide if it was timeout channel or any other channel with connection
+			chosen, recv, ok = reflect.Select(cases)
+		} else {
+			chosen = 1
+		}
 
 		switch chosen {
-		case 0: // context deadline, check if pool max connections reached
+		case ChosenContextDeadline: // context deadline, check if pool max connections reached
 
 			p.mutex.RLock()
 			conns := len(p.conns)
@@ -111,7 +130,7 @@ outer:
 			}
 
 			return nil, ctx.Err()
-		case 1: // this is timeout for acquire connection, so we need to check if there is dialing in progress, and if not, dial new connection
+		case ChosenAcquireTimeout: // this is timeout for acquire connection, so we need to check if there is dialing in progress, and if not, dial new connection
 			if !p.isDialing.CompareAndSwap(false, true) {
 				continue outer
 			}
