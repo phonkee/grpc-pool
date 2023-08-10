@@ -38,7 +38,7 @@ if err != nil {
 	panic(err)
 }
 
-// put connection back
+// don't forget to return connection back to pool, otherwise you will leak connections, and pool will be confused.
 defer pool.Release(conn)
 ```
 
