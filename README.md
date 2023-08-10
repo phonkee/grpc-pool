@@ -17,7 +17,9 @@ Let me show you example of how to use this pool.
 pool, err := grpc_pool.New(
     // Dial function is used to create new connection
     func(ctx context.Context, stats *grpc_pool.PoolStats, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
-        // create new connection (always pass options from grpc-pool)
+        // add additional dial options
+        opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		// create new connection (always pass options from grpc-pool)
         return grpc.DialContext(ctx, "localhost:50051", opts...) 
     }, 
     WithMaxConcurrentCalls(1000),
