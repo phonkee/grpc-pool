@@ -15,8 +15,10 @@ Let me show you example of how to use this pool.
 ```go
 // create new pool
 pool, err := grpc_pool.New(
+    // Dial function is used to create new connection
     func(ctx context.Context, stats *grpc_pool.PoolStats, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
-        return dialDummyGrpc(t, context.Background(), fns...), nil
+        // create new connection (always pass options from grpc-pool)
+        return grpc.DialContext(ctx, "localhost:50051", opts...) 
     }, 
     WithMaxConcurrentCalls(1000),
     WithMaxIdleConnections(5),
