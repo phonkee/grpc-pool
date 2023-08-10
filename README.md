@@ -5,8 +5,15 @@ but it shares single connection for multiple concurrent calls. This is useful wh
 your servers with too many gRPC method calls.
 Main idea of this pool is that connections are shared concurrently.
 
-This pool is self balancing, so you just need to configure it and it will do the rest.
-You can also access pool statistics and expose them to your monitoring system.
+This pool is self-balancing, so you just need to configure it, and it will do the rest.
+
+# stats
+
+gRPC pool provides stats about pool. You can use it to monitor your pool.
+
+```go
+stats := pool.Stats()
+````
 
 # example
 
