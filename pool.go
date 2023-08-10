@@ -49,7 +49,7 @@ func New(dialFunc DialFunc, opts ...Option) (*Pool, error) {
 		mutex:    &sync.RWMutex{},
 	}
 
-	// check in background if any connection should be closed
+	// check in background if any connection should be isClosed
 	go func() {
 		tick := time.NewTicker(result.options.cleanupInterval)
 		for {
@@ -67,14 +67,22 @@ func New(dialFunc DialFunc, opts ...Option) (*Pool, error) {
 
 // Pool implementation
 type Pool struct {
-	dialFunc  DialFunc
-	connMap   map[*grpc.ClientConn]*poolConn
-	conns     []*poolConn
+	// function that will be used to dial new connection
+	dialFunc DialFunc
+	// map of connections and their pool connections
+	connMap map[*grpc.ClientConn]*poolConn
+	// slice of connections that are currently available in correct order
+	conns []*poolConn
+	// mutex to protect access to connMap and conns
+	mutex *sync.RWMutex
+	// isDialing is used to prevent multiple dialing at the same time
 	isDialing atomic.Bool
-	mutex     *sync.RWMutex
-	options   *options
-	close     chan struct{}
-	closed    atomic.Bool
+	// pool options
+	options *options
+	// close channel is used to close the pool
+	close chan struct{}
+	// isClosed is used to check if pool is isClosed
+	isClosed atomic.Bool
 }
 
 // Acquire returns a connection from the pool. After using the connection, the caller must call Release, otherwise
@@ -119,7 +127,7 @@ outer:
 			}
 			return cc, err
 		default:
-			// channel was closed, try again
+			// channel was isClosed, try again
 			// we need to handle this case, just for safety.
 			if !ok {
 				continue outer
@@ -145,7 +153,7 @@ outer:
 
 // Close closes the pool, connections and other background resources.
 func (p *Pool) Close() error {
-	if !p.closed.CompareAndSwap(true, false) {
+	if !p.isClosed.CompareAndSwap(true, false) {
 		return ErrAlreadyClosed
 	}
 
@@ -242,7 +250,7 @@ func (p *Pool) cases(ctx context.Context) []reflect.SelectCase {
 	return result
 }
 
-// cleanupConnections checks if any connection should be closed.
+// cleanupConnections checks if any connection should be isClosed.
 //
 // There are two scenarios which we check
 // 1. If connection is idle for longer than
@@ -280,7 +288,7 @@ func (p *Pool) cleanupConnections() {
 		}
 	}
 
-	// check if we found any idle connections to be closed
+	// check if we found any idle connections to be isClosed
 	if len(idleConns) > 0 {
 		// check if idle connections are more than max idle connections
 		if uint(len(idleConns)) <= p.options.maxIdleConnections {

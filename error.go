@@ -34,5 +34,5 @@ var (
 	ErrInvalidMaxIdleTime     = errors.New("invalid max idle time")
 	ErrInvalidMaxLifetime     = errors.New("invalid max lifetime")
 	ErrMaxConnectionsReached  = errors.New("max connections reached")
-	ErrAlreadyClosed          = errors.New("pool already closed")
+	ErrAlreadyClosed          = errors.New("pool already isClosed")
 )

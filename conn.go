@@ -55,11 +55,16 @@ func newPoolConn(cc *grpc.ClientConn, options *options) *poolConn {
 // poolConn holds information about single connection in the pool with additional information and also queue of
 // connections. This is used to implement the pool.
 type poolConn struct {
-	Created    time.Time
-	Conn       *grpc.ClientConn
-	Chan       chan *grpc.ClientConn
+	// Created is the time when the connection was created
+	Created time.Time
+	// Conn is the actual connection, it is held here, so we can access it easily
+	Conn *grpc.ClientConn
+	// Chan is the channel of prepared connections, it is used in main select
+	Chan chan *grpc.ClientConn
+	// LastChange is the time when the last change happened, it is used to determine if the connection is idle
 	LastChange atomic.Pointer[time.Time]
-	Usage      *Counter
+	// Usage is the counter of how many times the connection was used, usable only in stats
+	Usage *Counter
 }
 
 // isFull means channel has all connections
@@ -73,11 +78,14 @@ func (p *poolConn) close() error {
 	// consume whole channel
 	close(p.Chan)
 	for _ = range p.Chan {
+		// no-op, just drain channel
 	}
 	return p.Conn.Close()
 }
 
+// stats returns the stats of the connection, depending on options
 func (p *poolConn) stats(opts *options) PoolConnStats {
+	// store channel length to be consistent in results (concurrency issues)
 	l := len(p.Chan)
 	return PoolConnStats{
 		Target:     p.Conn.Target(),
