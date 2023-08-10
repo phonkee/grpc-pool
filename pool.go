@@ -27,6 +27,7 @@ package grpc_pool
 import (
 	"context"
 	"errors"
+	"fmt"
 	"google.golang.org/grpc"
 	"reflect"
 	"slices"
@@ -98,19 +99,19 @@ outer:
 		chosen, recv, ok := reflect.Select(cases)
 
 		switch chosen {
-		case 0:
-			// context timeout, check if pool max connections reached
+		case 0: // context deadline, check if pool max connections reached
+
 			p.mutex.RLock()
 			conns := len(p.conns)
 			p.mutex.RUnlock()
 
-			// if max connections is set and we reached it, return error
+			// if max connections is set, and we reached it, return error
 			if p.options.maxConnections > 0 && uint(conns) >= p.options.maxConnections {
-				return nil, ErrMaxConnectionsReached
+				return nil, fmt.Errorf("%w: %v", ctx.Err(), ErrMaxConnectionsReached)
 			}
 
 			return nil, ctx.Err()
-		case 1: // this is timeout, so we need to check if there is dialing in progress, and if not, dial new connection
+		case 1: // this is timeout for acquire connection, so we need to check if there is dialing in progress, and if not, dial new connection
 			if !p.isDialing.CompareAndSwap(false, true) {
 				continue outer
 			}

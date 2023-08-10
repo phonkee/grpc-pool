@@ -130,11 +130,13 @@ func TestPool_Acquire(t *testing.T) {
 				err error
 			)
 
+			// acquire more connections than available
 			for i := 0; i < 3; i++ {
 				c, err = p.Acquire(ctx)
 			}
 
-			assert.NotNil(t, err)
+			assert.ErrorIs(t, err, context.DeadlineExceeded)
+			assert.ErrorContains(t, err, ErrMaxConnectionsReached.Error())
 			assert.Nil(t, c)
 		})
 
