@@ -1,19 +1,11 @@
 # grpc_pool
 
-Pool of gRPC connections. This pool is somehow special. It does not have single connection for single call,
-but it shares single connection for multiple concurrent calls. This is useful when you don't want to overload
-your servers with too many gRPC method calls.
-Main idea of this pool is that connections are shared concurrently.
+High performance gRPC pool for client connections. It's not as usual pool, it does not have single connection for single call,
+but rather it shares single connection for multiple concurrent calls. This is useful when you don't want to overload
+your servers with too many gRPC method calls on single connection.
+
 
 This pool is self-balancing, so you just need to configure it, and it will do the rest.
-
-# stats
-
-gRPC pool provides stats about pool. You can use it to monitor your pool.
-
-```go
-stats := pool.Stats()
-````
 
 # example
 
@@ -52,6 +44,15 @@ if err != nil {
 // don't forget to return connection back to pool, otherwise you will leak connections, and pool will be confused.
 defer pool.Release(conn)
 ```
+
+
+# stats
+
+gRPC pool provides stats about pool. You can use it to monitor your pool.
+
+```go
+stats := pool.Stats()
+````
 
 
 # author
