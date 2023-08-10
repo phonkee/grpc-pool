@@ -77,7 +77,7 @@ func (p *poolConn) isFull() bool {
 func (p *poolConn) close() error {
 	// consume whole channel
 	close(p.Chan)
-	for _ = range p.Chan {
+	for range p.Chan {
 		// no-op, just drain channel
 	}
 	return p.Conn.Close()
