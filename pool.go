@@ -46,7 +46,7 @@ func New(dialFunc DialFunc, opts ...Option) (*Pool, error) {
 	result := &Pool{
 		dialFunc: dialFunc,
 		options:  o,
-		connMap:  make(map[*grpc.ClientConn]*poolConn),
+		connMap:  make(map[*grpc.ClientConn]*conn),
 		mutex:    &sync.RWMutex{},
 	}
 
@@ -71,9 +71,9 @@ type Pool struct {
 	// function that will be used to dial new connection
 	dialFunc DialFunc
 	// map of connections and their pool connections
-	connMap map[*grpc.ClientConn]*poolConn
+	connMap map[*grpc.ClientConn]*conn
 	// slice of connections that are currently available in correct order
-	conns []*poolConn
+	conns []*conn
 	// mutex to protect access to connMap and conns
 	mutex *sync.RWMutex
 	// isDialing is used to prevent multiple dialing at the same time
@@ -146,7 +146,7 @@ outer:
 			// increment usage
 			pc.Usage.Inc()
 			// set last changed
-			pc.LastChange.Store(PtrTo(time.Now()))
+			pc.LastChange.Store(ptrTo(time.Now()))
 			return cc, nil
 		}
 	}
@@ -188,8 +188,8 @@ func (p *Pool) Release(conn *grpc.ClientConn) error {
 	}
 
 	// add connection back to the channel
-	pc.Chan <- conn
-	pc.LastChange.Store(PtrTo(time.Now()))
+	pc.ClientConnChan <- conn
+	pc.LastChange.Store(ptrTo(time.Now()))
 
 	// check if connection is still available
 	p.mutex.RLock()
@@ -211,7 +211,7 @@ func (p *Pool) Release(conn *grpc.ClientConn) error {
 
 // Stats returns stats of the pool. It's safe to call this method from multiple goroutines.
 // There is corner case when this method can take some time to return. When pool is dialing new connection.
-func (p *Pool) Stats() *PoolStats {
+func (p *Pool) Stats() *Stats {
 	p.mutex.RLock()
 	defer p.mutex.RUnlock()
 	return p.statsUnlocked()
@@ -247,7 +247,7 @@ func (p *Pool) cases(ctx context.Context) []reflect.SelectCase {
 	for _, conn := range p.conns {
 		result = append(result, reflect.SelectCase{
 			Dir:  reflect.SelectRecv,
-			Chan: reflect.ValueOf(conn.Chan),
+			Chan: reflect.ValueOf(conn.ClientConnChan),
 		})
 	}
 
@@ -265,7 +265,7 @@ func (p *Pool) cleanupConnections() {
 	defer p.mutex.Unlock()
 
 	// prepare idle connections
-	idleConns := make([]*poolConn, 0, len(p.conns))
+	idleConns := make([]*conn, 0, len(p.conns))
 
 	// iterate over connections and remove those that should be dead by now
 	for _, info := range p.connMap {
@@ -310,13 +310,13 @@ func (p *Pool) cleanupConnections() {
 				// TODO: warn here?
 			}
 
-			delete(p.connMap, info.Conn)
+			delete(p.connMap, info.ClientConn)
 		}
 	}
 }
 
 // dial dials a new connection and returns it
-func (p *Pool) dial(ctx context.Context, stats *PoolStats) (*poolConn, error) {
+func (p *Pool) dial(ctx context.Context, stats *Stats) (*conn, error) {
 
 	// currently only blocking functions are supported
 	opts := make([]grpc.DialOption, 0)
@@ -332,7 +332,7 @@ func (p *Pool) dial(ctx context.Context, stats *PoolStats) (*poolConn, error) {
 		return nil, err
 	}
 
-	return newPoolConn(cc, p.options), nil
+	return newConn(cc, p.options), nil
 }
 
 // newConn creates new connection with all necessary stuff, and returns it
@@ -353,12 +353,12 @@ func (p *Pool) newConn(ctx context.Context) (*grpc.ClientConn, error) {
 	}
 
 	// get one connection so we can satisfy the caller
-	cc := <-pc.Chan
+	cc := <-pc.ClientConnChan
 
 	// increment usage
 	pc.Usage.Inc()
 
-	p.connMap[pc.Conn] = pc
+	p.connMap[pc.ClientConn] = pc
 	p.conns = append(p.conns, pc)
 	return cc, nil
 }
@@ -366,8 +366,8 @@ func (p *Pool) newConn(ctx context.Context) (*grpc.ClientConn, error) {
 // statsUnlocked returns stats of the pool.
 // this method is private since it assumes that mutex is already locked
 // it's used safely and privately in other methods
-func (p *Pool) statsUnlocked() *PoolStats {
-	result := &PoolStats{}
+func (p *Pool) statsUnlocked() *Stats {
+	result := &Stats{}
 
 	// iterate over all connections and get stats
 	for _, info := range p.connMap {

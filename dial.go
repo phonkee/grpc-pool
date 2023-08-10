@@ -31,4 +31,4 @@ import (
 
 // DialFunc is a function that dials a gRPC connection.
 // This function is passed as required argument to New.
-type DialFunc func(ctx context.Context, stats *PoolStats, opts ...grpc.DialOption) (*grpc.ClientConn, error)
+type DialFunc func(ctx context.Context, stats *Stats, opts ...grpc.DialOption) (*grpc.ClientConn, error)

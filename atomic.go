@@ -26,27 +26,28 @@ package grpc_pool
 
 import "sync/atomic"
 
-// Counter is a simple counter that can be incremented and decremented atomically
-type Counter struct {
+// atomicCounter is a simple counter that can be incremented and decremented atomically
+type atomicCounter struct {
 	value uint64
 }
 
 // Dec decrements the counter by 1
-func (c *Counter) Dec() {
+func (c *atomicCounter) Dec() {
 	atomic.AddUint64(&c.value, ^uint64(0))
 }
 
 // Inc increments the counter by 1
-func (c *Counter) Inc() {
+func (c *atomicCounter) Inc() {
 	atomic.AddUint64(&c.value, 1)
 }
 
 // Get returns the current value of the counter
-func (c *Counter) Get() uint64 {
+func (c *atomicCounter) Get() uint64 {
 	return atomic.LoadUint64(&c.value)
 }
 
-// PtrTo returns a pointer to the given value
-func PtrTo[T any](x T) *T {
+// ptrTo returns a pointer to the given value
+// This is helper function to not be very verbose
+func ptrTo[T any](x T) *T {
 	return &x
 }

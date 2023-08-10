@@ -30,65 +30,65 @@ import (
 	"time"
 )
 
-// newPoolConn creates new pool connection
-func newPoolConn(cc *grpc.ClientConn, options *options) *poolConn {
+// newConn creates new pool connection
+func newConn(cc *grpc.ClientConn, options *options) *conn {
 	now := time.Now()
 
 	// now create new pool connection
-	result := &poolConn{
-		Created:    now,
-		Chan:       make(chan *grpc.ClientConn, options.maxConcurrency),
-		Conn:       cc,
-		LastChange: atomic.Pointer[time.Time]{},
-		Usage:      new(Counter),
+	result := &conn{
+		Created:        now,
+		ClientConnChan: make(chan *grpc.ClientConn, options.maxConcurrency),
+		ClientConn:     cc,
+		LastChange:     atomic.Pointer[time.Time]{},
+		Usage:          new(atomicCounter),
 	}
 
 	result.LastChange.Store(&now)
 
 	// now add all necessary connections
 	for i := 0; i < options.maxConcurrency; i++ {
-		result.Chan <- cc
+		result.ClientConnChan <- cc
 	}
 	return result
 }
 
-// poolConn holds information about single connection in the pool with additional information and also queue of
+// conn holds information about single connection in the pool with additional information and also queue of
 // connections. This is used to implement the pool.
-type poolConn struct {
+type conn struct {
 	// Created is the time when the connection was created
 	Created time.Time
-	// Conn is the actual connection, it is held here, so we can access it easily
-	Conn *grpc.ClientConn
-	// Chan is the channel of prepared connections, it is used in main select
-	Chan chan *grpc.ClientConn
+	// ClientConn is the actual connection, it is held here, so we can access it easily
+	ClientConn *grpc.ClientConn
+	// ClientConnChan is the channel of prepared connections, it is used in main select
+	ClientConnChan chan *grpc.ClientConn
 	// LastChange is the time when the last change happened, it is used to determine if the connection is idle
 	LastChange atomic.Pointer[time.Time]
 	// Usage is the counter of how many times the connection was used, usable only in stats
-	Usage *Counter
+	Usage *atomicCounter
 }
 
 // isFull means channel has all connections
-func (p *poolConn) isFull() bool {
-	return len(p.Chan) == cap(p.Chan)
+func (p *conn) isFull() bool {
+	return len(p.ClientConnChan) == cap(p.ClientConnChan)
 }
 
 // close closes the connection and also closes the channel
 // does all the necessary cleanup
-func (p *poolConn) close() error {
+func (p *conn) close() error {
 	// consume whole channel
-	close(p.Chan)
-	for range p.Chan {
+	close(p.ClientConnChan)
+	for range p.ClientConnChan {
 		// no-op, just drain channel
 	}
-	return p.Conn.Close()
+	return p.ClientConn.Close()
 }
 
 // stats returns the stats of the connection, depending on options
-func (p *poolConn) stats(opts *options) PoolConnStats {
+func (p *conn) stats(opts *options) ConnStats {
 	// store channel length to be consistent in results (concurrency issues)
-	l := len(p.Chan)
-	return PoolConnStats{
-		Target:     p.Conn.Target(),
+	l := len(p.ClientConnChan)
+	return ConnStats{
+		Target:     p.ClientConn.Target(),
 		Created:    p.Created,
 		Deadline:   p.Created.Add(opts.maxLifetime),
 		LastChange: *(p.LastChange.Load()),

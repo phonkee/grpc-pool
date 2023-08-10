@@ -26,13 +26,13 @@ package grpc_pool
 
 import "time"
 
-// PoolStats represents pool statistics
-type PoolStats struct {
-	Connections []PoolConnStats `json:"connections"`
+// Stats represents pool statistics
+type Stats struct {
+	Connections []ConnStats `json:"connections"`
 }
 
-// PoolConnStats represents pool connection statistics
-type PoolConnStats struct {
+// ConnStats represents pool connection statistics
+type ConnStats struct {
 	Target     string    `json:"target"`
 	Created    time.Time `json:"created"`
 	Deadline   time.Time `json:"deadline"`

@@ -72,14 +72,14 @@ func dialDummyGrpc(t *testing.T, ctx context.Context, fns ...func(conn *grpc.Cli
 
 // df is a dummy dial function for testing purposes
 var df = func(t *testing.T, fns ...func(conn *grpc.ClientConn)) DialFunc {
-	return func(ctx context.Context, stats *PoolStats, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
+	return func(ctx context.Context, stats *Stats, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
 		return dialDummyGrpc(t, context.Background(), fns...), nil
 	}
 }
 
 func TestNew(t *testing.T) {
 
-	p, err := New(func(ctx context.Context, stats *PoolStats, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
+	p, err := New(func(ctx context.Context, stats *Stats, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
 		return dialDummyGrpc(t, context.Background()), nil
 	})
 
