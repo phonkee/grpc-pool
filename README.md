@@ -18,7 +18,7 @@ pool, err := grpc_pool.New(
     func(ctx context.Context, stats *grpc_pool.PoolStats, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
         // add additional dial options
         opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
-		// create new connection (always pass options from grpc-pool)
+        // create new connection (always pass options from grpc-pool)
         return grpc.DialContext(ctx, "localhost:50051", opts...) 
     }, 
     // WithMaxConcurrentCalls sets how many concurrent calls can be made on single connection 
