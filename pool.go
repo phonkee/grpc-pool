@@ -216,10 +216,12 @@ func (p *Pool) Stats() *PoolStats {
 	return p.statsUnlocked()
 }
 
-// cases returns channel cases for Select
-// first is timeout channel
-// we basically want to select on all channels
-// this method is called with read lock, so when other concurrent calls are dialing to disco, this will wait (neat huh?)
+// cases creates a slice of SelectCases that we will use in reflect.Select call.
+//
+// order of returned SelectCases is following
+// 0. - context.Done channel
+// 1. - timeout channel
+// 1...n - all other channels are channels with grpc connections in order
 func (p *Pool) cases(ctx context.Context) []reflect.SelectCase {
 	p.mutex.RLock()
 	defer p.mutex.RUnlock()
