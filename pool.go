@@ -209,7 +209,8 @@ func (p *Pool) Release(conn *grpc.ClientConn) error {
 	return nil
 }
 
-// Stats returns stats of the pool.
+// Stats returns stats of the pool. It's safe to call this method from multiple goroutines.
+// There is corner case when this method can take some time to return. When pool is dialing new connection.
 func (p *Pool) Stats() *PoolStats {
 	p.mutex.RLock()
 	defer p.mutex.RUnlock()
