@@ -27,7 +27,7 @@ package grpc_pool
 import "time"
 
 const (
-	DefaultAcquireTimeout  = 100 * time.Millisecond
+	DefaultAcquireTimeout  = 50 * time.Millisecond
 	DefaultCleanupInterval = 5 * time.Second
 	DefaultMaxConcurrency  = 1000
 	DefaultMaxIdleTime     = time.Second * 60
