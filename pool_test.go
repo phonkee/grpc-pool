@@ -78,7 +78,6 @@ var df = func(t *testing.T, fns ...func(conn *grpc.ClientConn)) DialFunc {
 }
 
 func TestNew(t *testing.T) {
-
 	p, err := New(func(ctx context.Context, stats *Stats, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
 		return dialDummyGrpc(t, context.Background()), nil
 	})
