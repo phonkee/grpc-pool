@@ -422,7 +422,7 @@ func (p *Pool) dial(ctx context.Context, stats *Stats) (_ *conn, err error) {
 	}()
 
 	// first dial the connection
-	cc, err := p.dialFunc(ctx, stats)
+	cc, err := p.dialFunc(ctx, stats, opts...)
 
 	// if dialing failed, return error
 	if err != nil {
