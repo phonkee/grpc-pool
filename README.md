@@ -4,12 +4,21 @@ High performance gRPC pool for client connections. It's not as usual pool, it do
 but rather it shares single connection for multiple concurrent calls. This is useful when you don't want to overload
 your servers with too many gRPC method calls on single connection.
 
+# features
 
-This pool is self-balancing, so you just need to configure it, and it will do the rest.
+gRPC pool supports following features:
 
-# example
+* max concurrent calls on single connection
+* max idle connections count
+* max idle connection time
+* max connections count
+* max lifetime of connection
 
-Let me show you example of how to use this pool.
+All have respective options `With...`. 
+
+# example configuration
+
+Let's have a look at example configuration. It configures most used options.
 
 ```go
 // create new pool
@@ -44,7 +53,6 @@ if err != nil {
 // don't forget to return connection back to pool, otherwise you will leak connections, and pool will be confused.
 defer pool.Release(conn)
 ```
-
 
 # stats
 
