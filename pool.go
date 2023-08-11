@@ -114,15 +114,17 @@ outer:
 		cases := p.cases(ctx)
 
 		// if we have more than 2 cases, it means we already have some connections in the pool
+		// and we can do Select
 		if len(cases) > 2 {
 			// we are selecting on multiple channels, we need to get the index of the channel that was selected
 			// to decide if it was timeout channel or any other channel with connection
 			chosen, recv, ok = reflect.Select(cases)
-		} else {
+		} else { // special case when we don't have any connections, and we want directly dial new connection
 			// timeout forces us to dial new connection
 			chosen = ChosenAcquireTimeout
 		}
 
+		// check on chosen index (0-context, 1-acquireTimeout, 2+ - connection)
 		switch chosen {
 		case ChosenContextDeadline: // context deadline, check if pool max connections reached
 
