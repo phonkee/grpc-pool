@@ -52,8 +52,9 @@ func newConn(cc *grpc.ClientConn, options *options) *conn {
 	return result
 }
 
-// conn holds information about single connection in the pool with additional information and also queue of
-// connections. This is used to implement the pool.
+// conn holds information about single connection in the pool with additional information
+// it also holds buffered channel with pointers to connections. This is used to hold track of borrowed connections
+// and makes things easy.
 type conn struct {
 	// Created is the time when the connection was created
 	Created time.Time
