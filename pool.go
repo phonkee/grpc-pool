@@ -46,6 +46,10 @@ const (
 // New creates a new pool of gRPC connections.
 // Options can be passed to configure the pool.
 func New(dialFunc DialFunc, opts ...Option) (*Pool, error) {
+	// check if dial function is valid
+	if dialFunc == nil {
+		return nil, ErrInvalidDialFunc
+	}
 	o := newOptions()
 	if err := o.apply(opts...); err != nil {
 		return nil, err
@@ -79,12 +83,10 @@ type Pool struct {
 	dialFunc DialFunc
 	// map of connections and their pool connections
 	connMap map[*grpc.ClientConn]*conn
-	// slice of connections that are currently available in correct order
+	// slice of connections that are currently available in correct order (used because map is not ordered)
 	conns []*conn
 	// mutex to protect access to connMap and conns
 	mutex *sync.RWMutex
-	// isDialing is used to prevent multiple dialing at the same time
-	isDialing atomic.Bool
 	// pool options
 	options *options
 	// close channel is used to close the pool
@@ -101,14 +103,13 @@ type Pool struct {
 //
 // Do not forget to Release the connection when you are done with it. Otherwise, you will have a problem.
 func (p *Pool) Acquire(ctx context.Context) (*grpc.ClientConn, error) {
-
 	var (
 		chosen int
 		recv   reflect.Value
 		ok     bool
 	)
 
-outer:
+main:
 	for {
 		// get all the cases we want to select on
 		cases := p.cases(ctx)
@@ -141,17 +142,21 @@ outer:
 			// otherwise just return context error
 			return nil, ctx.Err()
 		case ChosenAcquireTimeout: // this is timeout for acquire connection, so we need to check if there is dialing in progress, and if not, dial new connection
-			if !p.isDialing.CompareAndSwap(false, true) {
-				continue outer
+			// try to acquire write lock
+			if !p.mutex.TryLock() {
+				continue main
 			}
 			// create new connection with all the bells and whistles
 			cc, err := p.newConn(ctx)
+			// lock back
+			p.mutex.Unlock()
+
 			if err != nil {
 				if errors.Is(err, ErrMaxConnectionsReached) {
 					// we reached max connections, so we need to wait for some time and then try again (we will use
 					// acquireTimeout for this)
 					time.Sleep(p.options.acquireTimeout)
-					continue outer
+					continue main
 				}
 				return nil, err
 			}
@@ -160,7 +165,7 @@ outer:
 
 			// we need to handle case when channel was closed (safety reasons)
 			if !ok {
-				continue outer
+				continue main
 			}
 
 			// now we know we have client connection, so let's get it from reflect.Value
@@ -172,7 +177,7 @@ outer:
 			p.mutex.RUnlock()
 			// if we can't find it, might be some concurrent stealing
 			if !ok {
-				continue outer
+				continue main
 			}
 			// increment usage given connection
 			pc.Usage.Inc()
@@ -222,7 +227,7 @@ func (p *Pool) Forget(cc *grpc.ClientConn) error {
 	// remove now from available connections
 	p.mutex.Lock()
 	if index := slices.Index(p.conns, pc); index != -1 {
-		slices.Delete(p.conns, index, index+1)
+		p.conns = slices.Delete(p.conns, index, index+1)
 	}
 	p.mutex.Unlock()
 
@@ -336,7 +341,7 @@ func (p *Pool) cleanupConnections() {
 		// check deadline here
 		if info.Created.Add(p.options.maxLifetime).Before(time.Now()) {
 			if index := slices.Index(p.conns, info); index > -1 {
-				slices.Delete(p.conns, index, index+1)
+				p.conns = slices.Delete(p.conns, index, index+1)
 				continue
 			}
 		}
@@ -365,7 +370,7 @@ func (p *Pool) cleanupConnections() {
 		// now go through idle connections (have in mind max idle connections) and close them right away
 		for _, info := range idleConns[p.options.maxIdleConnections:] {
 			if index := slices.Index(p.conns, info); index > -1 {
-				slices.Delete(p.conns, index, index+1)
+				p.conns = slices.Delete(p.conns, index, index+1)
 			}
 
 			// we have all connections released back, we should delete connection from map and close it
@@ -401,13 +406,20 @@ func (p *Pool) cleanupConnections() {
 }
 
 // dial dials a new connection and returns it
-func (p *Pool) dial(ctx context.Context, stats *Stats) (*conn, error) {
+func (p *Pool) dial(ctx context.Context, stats *Stats) (_ *conn, err error) {
 
 	// currently only blocking functions are supported
 	opts := make([]grpc.DialOption, 0)
 	if !p.options.nonBlocking {
 		opts = append(opts, grpc.WithBlock())
 	}
+
+	// handle panic in dial
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("%w: %v", ErrDialFailed, r)
+		}
+	}()
 
 	// first dial the connection
 	cc, err := p.dialFunc(ctx, stats)
@@ -422,10 +434,6 @@ func (p *Pool) dial(ctx context.Context, stats *Stats) (*conn, error) {
 
 // newConn creates new connection with all necessary stuff, and returns it
 func (p *Pool) newConn(ctx context.Context) (*grpc.ClientConn, error) {
-	p.mutex.Lock()
-	defer p.mutex.Unlock()
-	defer p.isDialing.Store(false)
-
 	// check if max connections was set, and if we reached it
 	if p.options.maxConnections > 0 && uint(len(p.conns)) >= p.options.maxConnections {
 		return nil, ErrMaxConnectionsReached

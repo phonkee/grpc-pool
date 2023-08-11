@@ -170,5 +170,27 @@ func TestPool_Acquire(t *testing.T) {
 				assert.Equal(t, 2, len(p.connMap))
 			})
 		})
+
+		t.Run("test forget", func(t *testing.T) {
+			p, _ := New(
+				df(t, func(conn *grpc.ClientConn) {}),
+				WithMaxConcurrency(2),
+			)
+
+			var c *grpc.ClientConn
+			for i := 0; i < 3; i++ {
+				ctx, cf := context.WithTimeout(context.Background(), time.Second)
+				c, _ = p.Acquire(ctx)
+				cf()
+			}
+
+			assert.Equal(t, 2, len(p.connMap))
+
+			_ = p.Forget(c)
+			p.cleanupConnections()
+
+			assert.Equal(t, 1, len(p.connMap))
+		})
+
 	})
 }
