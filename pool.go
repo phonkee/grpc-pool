@@ -156,13 +156,14 @@ outer:
 				return nil, err
 			}
 			return cc, err
-		default:
+		default: // we got connection from one of the connection channels
+
 			// we need to handle case when channel was closed (safety reasons)
 			if !ok {
 				continue outer
 			}
 
-			// we got client connection (yay)
+			// now we know we have client connection, so let's get it from reflect.Value
 			cc := recv.Interface().(*grpc.ClientConn)
 
 			// now get the pool connection, so we can update a thing or two
