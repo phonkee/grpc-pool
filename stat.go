@@ -37,6 +37,6 @@ type ConnStats struct {
 	Created    time.Time `json:"created"`
 	Deadline   time.Time `json:"deadline"`
 	LastChange time.Time `json:"last_change"`
-	Working    int       `json:"working"`
-	Idle       int       `json:"idle"`
+	Working    uint      `json:"working"`
+	Idle       uint      `json:"idle"`
 }

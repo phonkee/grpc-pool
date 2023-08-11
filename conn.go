@@ -46,7 +46,7 @@ func newConn(cc *grpc.ClientConn, options *options) *conn {
 	result.LastChange.Store(&now)
 
 	// now add all necessary connections
-	for i := 0; i < options.maxConcurrency; i++ {
+	for i := 0; uint(i) < options.maxConcurrency; i++ {
 		result.ClientConnChan <- cc
 	}
 	return result
@@ -87,7 +87,7 @@ func (p *conn) close() error {
 // stats returns the stats of the connection, depending on options
 func (p *conn) stats(opts *options) ConnStats {
 	// store channel length to be consistent in results (concurrency issues)
-	l := len(p.ClientConnChan)
+	l := uint(len(p.ClientConnChan))
 	return ConnStats{
 		Target:     p.ClientConn.Target(),
 		Created:    p.Created,

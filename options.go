@@ -54,7 +54,7 @@ func WithCleanupInterval(interval time.Duration) Option {
 }
 
 // WithMaxConcurrency sets the maximum number of concurrent method calls on single connection.
-func WithMaxConcurrency(max int) Option {
+func WithMaxConcurrency(max uint) Option {
 	return func(o *options) error {
 		if max <= 0 {
 			return ErrInvalidMaxConcurrency
@@ -116,7 +116,7 @@ func newOptions() *options {
 // options holds all options for the pool.
 type options struct {
 	acquireTimeout     time.Duration
-	maxConcurrency     int
+	maxConcurrency     uint
 	maxConnections     uint
 	maxLifetime        time.Duration
 	maxIdleTime        time.Duration

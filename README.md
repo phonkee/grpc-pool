@@ -30,8 +30,8 @@ pool, err := grpc_pool.New(
         // create new connection (always pass options from grpc-pool)
         return grpc.DialContext(ctx, "localhost:50051", opts...) 
     }, 
-    // WithMaxConcurrentCalls sets how many concurrent calls can be made on single connection 
-    WithMaxConcurrentCalls(1000),
+    // WithMaxConcurrency sets how many concurrent calls can be made on single connection 
+    WithMaxConcurrency(1000),
     // WithMaxIdleConnections sets how many idle connections can be kept in pool
     WithMaxIdleConnections(5),
     // WithMaxIdleTime sets after how much time idle connection is marked as idle
