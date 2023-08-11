@@ -114,12 +114,14 @@ outer:
 			// to decide if it was timeout channel or any other channel with connection
 			chosen, recv, ok = reflect.Select(cases)
 		} else {
-			chosen = 1
+			// timeout forces us to dial new connection
+			chosen = ChosenAcquireTimeout
 		}
 
 		switch chosen {
 		case ChosenContextDeadline: // context deadline, check if pool max connections reached
 
+			// safely get number of connections that we provide (not idle, not closed)
 			p.mutex.RLock()
 			conns := len(p.conns)
 			p.mutex.RUnlock()
@@ -129,6 +131,7 @@ outer:
 				return nil, fmt.Errorf("%w: %v", ctx.Err(), ErrMaxConnectionsReached)
 			}
 
+			// otherwise just return context error
 			return nil, ctx.Err()
 		case ChosenAcquireTimeout: // this is timeout for acquire connection, so we need to check if there is dialing in progress, and if not, dial new connection
 			if !p.isDialing.CompareAndSwap(false, true) {
@@ -138,8 +141,8 @@ outer:
 			cc, err := p.newConn(ctx)
 			if err != nil {
 				if errors.Is(err, ErrMaxConnectionsReached) {
-					// we reached max connections, so we need to wait for some time and then try again. we will use
-					// acquireTimeout for this
+					// we reached max connections, so we need to wait for some time and then try again (we will use
+					// acquireTimeout for this)
 					time.Sleep(p.options.acquireTimeout)
 					continue outer
 				}
@@ -147,25 +150,28 @@ outer:
 			}
 			return cc, err
 		default:
-			// channel was isClosed, try again
-			// we need to handle this case, just for safety.
+			// we need to handle case when channel was closed (safety reasons)
 			if !ok {
 				continue outer
 			}
 
 			// we got client connection (yay)
 			cc := recv.Interface().(*grpc.ClientConn)
+
 			// now get the pool connection, so we can update a thing or two
 			p.mutex.RLock()
 			pc, ok := p.connMap[cc]
 			p.mutex.RUnlock()
+			// if we can't find it, might be some concurrent stealing
 			if !ok {
 				continue outer
 			}
-			// increment usage
+			// increment usage given connection
 			pc.Usage.Inc()
-			// set last changed
+			// set last changed to now
 			pc.LastChange.Store(ptrTo(time.Now()))
+
+			// return back to caller
 			return cc, nil
 		}
 	}
@@ -177,13 +183,15 @@ func (p *Pool) Close() error {
 		return ErrAlreadyClosed
 	}
 
-	// close closes close channel (heh) - this awesome documentation and it's underlined in ide? hello intellij!
+	// let know all who are listening on close channel that we are closed (goroutines that are cleaning up connections)
 	close(p.close)
 
+	// remove connections
 	p.mutex.Lock()
 	p.conns = nil
 	p.mutex.Unlock()
 
+	// bye bye
 	return nil
 }
 
