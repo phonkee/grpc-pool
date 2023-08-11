@@ -31,4 +31,7 @@ import (
 
 // DialFunc is a function that dials a gRPC connection.
 // This function is passed as required argument to New.
+//
+// It adds stats information to have context about already established connections.
+// This is for case when you need to do more advanced client side load balancing.
 type DialFunc func(ctx context.Context, stats *Stats, opts ...grpc.DialOption) (*grpc.ClientConn, error)
