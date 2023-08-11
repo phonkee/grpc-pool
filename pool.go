@@ -93,8 +93,13 @@ type Pool struct {
 	isClosed atomic.Bool
 }
 
-// Acquire returns a connection from the pool. After using the connection, the caller must call Release, otherwise
-// pool will be starved and will create new connections, and eventually will exhaust the resources.
+// Acquire acquires single connection from the pool.
+// It checks if there is any connection available, and if not, it will dial new connection.
+//
+// It uses unsafe, but uses it in a very safe way.
+// It is safe to use it in concurrent environment.
+//
+// Do not forget to Release the connection when you are done with it. Otherwise, you will have a problem.
 func (p *Pool) Acquire(ctx context.Context) (*grpc.ClientConn, error) {
 
 	var (
@@ -178,6 +183,8 @@ outer:
 }
 
 // Close closes the pool, connections and other background resources.
+//
+// After pool is closed, you cannot do anything with it.
 func (p *Pool) Close() error {
 	if !p.isClosed.CompareAndSwap(true, false) {
 		return ErrAlreadyClosed
@@ -196,6 +203,8 @@ func (p *Pool) Close() error {
 }
 
 // Release returns a connection to the pool.
+//
+// It also updates necessary information about the connection (stats, last used time, etc.).
 func (p *Pool) Release(conn *grpc.ClientConn) error {
 	// release connection
 	p.mutex.RLock()
