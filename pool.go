@@ -357,6 +357,8 @@ func (p *Pool) cleanupConnections() {
 		}
 	}
 
+	// prepare slice for deleted connections
+	// these will be deleted at the end of this method
 	deletedConns := make([]*grpc.ClientConn, 0)
 
 	// check if we found any idle connections to be isClosed
@@ -376,22 +378,24 @@ func (p *Pool) cleanupConnections() {
 		}
 	}
 
-	// prepare lookup for available connections
-	availConns := make(map[*conn]struct{}, len(p.conns))
-	for _, conn := range p.conns {
-		availConns[conn] = struct{}{}
-	}
-
-	// go over connections and close those that are not available anymore and have full channel
-	for _, info := range p.connMap {
-		if _, ok := availConns[info]; ok {
-			continue
+	// check for connections that are not avilable anymore but are in map
+	{
+		// prepare lookup for available connections
+		availConns := make(map[*conn]struct{}, len(p.conns))
+		for _, conn := range p.conns {
+			availConns[conn] = struct{}{}
 		}
-		if !info.isFull() {
-			continue
-		}
-		deletedConns = append(deletedConns, info.ClientConn)
 
+		// go over connections and close those that are not available anymore and have full channel
+		for _, info := range p.connMap {
+			if _, ok := availConns[info]; ok {
+				continue
+			}
+			if !info.isFull() {
+				continue
+			}
+			deletedConns = append(deletedConns, info.ClientConn)
+		}
 	}
 
 	// mpw delete all connections that are isClosed
