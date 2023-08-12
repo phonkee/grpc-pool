@@ -470,7 +470,10 @@ func (p *Pool) createConnection(ctx context.Context) (*grpc.ClientConn, error) {
 	// increment usage
 	pc.Usage.Add(1)
 
+	// add connection to storage
 	p.storage[pc.ClientConn] = pc
+
+	// add connection to available connections, this makes it available for other callers
 	p.conns = append(p.conns, pc)
 	return cc, nil
 }
