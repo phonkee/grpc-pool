@@ -372,23 +372,22 @@ func (p *Pool) cleanupConnections() {
 	deletedConns := make([]*grpc.ClientConn, 0)
 
 	// check if we found any idle connections to be isClosed
+
 	if len(idleConns) > 0 {
 		// check if idle connections are more than max idle connections
-		if uint(len(idleConns)) <= p.options.maxIdleConnections {
-			return
-		}
+		if uint(len(idleConns)) > p.options.maxIdleConnections {
+			// now go through idle connections (have in mind max idle connections) and close them right away
+			for _, info := range idleConns[p.options.maxIdleConnections:] {
+				if index := slices.Index(p.conns, info); index > -1 {
+					p.conns = slices.Delete(p.conns, index, index+1)
+				}
 
-		// now go through idle connections (have in mind max idle connections) and close them right away
-		for _, info := range idleConns[p.options.maxIdleConnections:] {
-			if index := slices.Index(p.conns, info); index > -1 {
-				p.conns = slices.Delete(p.conns, index, index+1)
+				deletedConns = append(deletedConns, info.ClientConn)
 			}
-
-			deletedConns = append(deletedConns, info.ClientConn)
 		}
 	}
 
-	// check for connections that are not avilable anymore but are in map
+	// check for connections that are not available anymore but are in map
 	{
 		// prepare lookup for available connections
 		availConns := make(map[*conn]struct{}, len(p.conns))
