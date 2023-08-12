@@ -40,8 +40,8 @@ type Config struct {
 }
 
 // Options returns options by given config
-func (c *Config) Options(df DialFunc, opts ...Option) []Option {
-	opts = append(opts,
+func (c *Config) Options(df DialFunc) []Option {
+	return []Option{
 		WithAcquireTimeout(c.AcquireTimeout),
 		WithCleanupInterval(c.CleanupInterval),
 		WithMaxConcurrency(c.MaxConcurrency),
@@ -49,6 +49,5 @@ func (c *Config) Options(df DialFunc, opts ...Option) []Option {
 		WithMaxIdleConnections(c.MaxIdleConnections),
 		WithMaxIdleTime(c.MaxIdleTime),
 		WithMaxLifetime(c.MaxLifetime),
-	)
-	return opts
+	}
 }
