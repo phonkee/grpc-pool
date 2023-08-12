@@ -214,6 +214,9 @@ func (p *Pool) Close() error {
 	p.conns = nil
 	p.mutex.Unlock()
 
+	// run cleanup in goroutine eagerly
+	go p.cleanupConnections()
+
 	// bye bye
 	return nil
 }
@@ -371,19 +374,15 @@ func (p *Pool) cleanupConnections() {
 	// these will be deleted at the end of this method
 	deletedConns := make([]*grpc.ClientConn, 0)
 
-	// check if we found any idle connections to be isClosed
-
-	if len(idleConns) > 0 {
-		// check if idle connections are more than max idle connections
-		if uint(len(idleConns)) > p.options.maxIdleConnections {
-			// now go through idle connections (have in mind max idle connections) and close them right away
-			for _, info := range idleConns[p.options.maxIdleConnections:] {
-				if index := slices.Index(p.conns, info); index > -1 {
-					p.conns = slices.Delete(p.conns, index, index+1)
-				}
-
-				deletedConns = append(deletedConns, info.ClientConn)
+	// check if we found any idle connections to be closed
+	if len(idleConns) > 0 && uint(len(idleConns)) > p.options.maxIdleConnections {
+		// now go through idle connections (have in mind max idle connections) and close them right away
+		for _, info := range idleConns[p.options.maxIdleConnections:] {
+			if index := slices.Index(p.conns, info); index > -1 {
+				p.conns = slices.Delete(p.conns, index, index+1)
 			}
+
+			deletedConns = append(deletedConns, info.ClientConn)
 		}
 	}
 
