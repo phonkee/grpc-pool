@@ -183,7 +183,7 @@ main:
 				continue main
 			}
 			// increment usage given connection
-			pc.Usage.Inc()
+			pc.Usage.Add(1)
 			// set last changed to now
 			pc.LastChange.Store(ptrTo(time.Now()))
 
@@ -463,7 +463,7 @@ func (p *Pool) newConn(ctx context.Context) (*grpc.ClientConn, error) {
 	cc := <-pc.ClientConnChan
 
 	// increment usage
-	pc.Usage.Inc()
+	pc.Usage.Add(1)
 
 	p.connMap[pc.ClientConn] = pc
 	p.conns = append(p.conns, pc)

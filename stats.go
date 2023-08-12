@@ -24,7 +24,9 @@
 
 package grpc_pool
 
-import "time"
+import (
+	"time"
+)
 
 // Stats represents pool statistics
 type Stats struct {
@@ -39,4 +41,5 @@ type ConnStats struct {
 	LastChange time.Time `json:"last_change"`
 	Working    uint      `json:"working"`
 	Idle       uint      `json:"idle"`
+	Used       uint64    `json:"used"`
 }

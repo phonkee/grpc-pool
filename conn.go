@@ -40,7 +40,7 @@ func newConn(cc *grpc.ClientConn, options *options) *conn {
 		ClientConnChan: make(chan *grpc.ClientConn, options.maxConcurrency),
 		ClientConn:     cc,
 		LastChange:     atomic.Pointer[time.Time]{},
-		Usage:          new(atomicCounter),
+		Usage:          new(atomic.Uint64),
 	}
 
 	result.LastChange.Store(&now)
@@ -67,7 +67,7 @@ type conn struct {
 	// LastChange is the time when the last change happened, it is used to determine if the connection is idle
 	LastChange atomic.Pointer[time.Time]
 	// Usage is the counter of how many times the connection was used, usable only in stats
-	Usage *atomicCounter
+	Usage *atomic.Uint64
 }
 
 // isFull means channel has all connections
@@ -97,5 +97,6 @@ func (p *conn) stats(opts *options) ConnStats {
 		LastChange: *(p.LastChange.Load()),
 		Working:    opts.maxConcurrency - l,
 		Idle:       l,
+		Used:       p.Usage.Load(),
 	}
 }
