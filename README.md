@@ -11,7 +11,7 @@ Two channels represent context and acquire timeout, and rest of channels represe
 There are 3 cases for select:
 
 * context is done - return context Error
-* acquire timeout is done - retry again
+* acquire timeout is done - try to create new connection
 * connection is ready - return connection
 
 Whole pool is based on this idea. There are some additional features but basically this is how the core works.
