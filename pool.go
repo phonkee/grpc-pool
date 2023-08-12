@@ -250,6 +250,11 @@ func (p *Pool) Release(conn *grpc.ClientConn) error {
 	}
 	// check here for max lifetime
 
+	// check if we have full channel
+	if pc.isFull() {
+		return ErrInvalidConnection
+	}
+
 	// check for max lifetime
 	if pc.Created.Add(p.options.maxLifetime).Before(time.Now()) {
 		// connection should be closed when all are returned
@@ -261,15 +266,8 @@ func (p *Pool) Release(conn *grpc.ClientConn) error {
 		p.mutex.Unlock()
 	}
 
-	// now we need to do multiple things
-	// * put connection back to the channel
-	// * update last used time
-	// * check if connection is still available (in p.Conns), if not and all cons are returned, close it and remove from map
-	if pc.isFull() {
-		return ErrInvalidConnection
-	}
-
-	// add connection back to the channel
+	// add connection back to the channel and update last change
+	// this should be enough for pool to work
 	pc.ClientConnChan <- conn
 	pc.LastChange.Store(ptrTo(time.Now()))
 
