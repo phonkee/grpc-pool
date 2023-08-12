@@ -15,6 +15,7 @@ Select can return from following channels:
 * `2..n` connection is ready - return connection
 
 Whole pool is based on this idea. There are some additional features but basically this is how the core works.
+There are additional features, but it's minor to this main idea.
 
 # features
 
