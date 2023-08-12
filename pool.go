@@ -467,7 +467,7 @@ func (p *Pool) createConnection(ctx context.Context) (*grpc.ClientConn, error) {
 	// get one connection so we can satisfy the caller
 	cc := <-pc.ClientConnChan
 
-	// increment usage
+	// increment usage. since we directly return connection to client
 	pc.Usage.Add(1)
 
 	// add connection to storage
@@ -475,6 +475,8 @@ func (p *Pool) createConnection(ctx context.Context) (*grpc.ClientConn, error) {
 
 	// add connection to available connections, this makes it available for other callers
 	p.conns = append(p.conns, pc)
+
+	// return single connection that we prepared for caller
 	return cc, nil
 }
 
