@@ -25,7 +25,8 @@
 package grpc_pool
 
 // ptrTo returns a pointer to the given value
-// This is helper function to not be very verbose
+//
+// This is helper function to not be very verbose in the code
 func ptrTo[T any](x T) *T {
 	return &x
 }
