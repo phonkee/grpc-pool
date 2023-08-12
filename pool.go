@@ -260,21 +260,6 @@ func (p *Pool) Release(conn *grpc.ClientConn) error {
 	pc.ClientConnChan <- conn
 	pc.LastChange.Store(ptrTo(time.Now()))
 
-	// check if connection is still available
-	p.mutex.RLock()
-	position := slices.Index(p.conns, pc)
-	p.mutex.RUnlock()
-
-	// connection is not available anymore and has channel full (all connections are back)
-	if position == -1 && pc.isFull() {
-		if err := pc.close(); err != nil {
-			// TODO: warn maybe log
-		}
-		p.mutex.Lock()
-		delete(p.connMap, conn)
-		p.mutex.Unlock()
-	}
-
 	return nil
 }
 
