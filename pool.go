@@ -48,10 +48,12 @@ const (
 // New creates a new pool of gRPC connections.
 // Options can be passed to configure the pool.
 func New(dialFunc DialFunc, opts ...Option) (*Pool, error) {
+	// first instantiate default options with dialFunc
 	o, err := newOptions(dialFunc)
 	if err != nil {
 		return nil, err
 	}
+	// now apply all passed Options
 	if err := o.apply(opts...); err != nil {
 		return nil, err
 	}
@@ -61,7 +63,10 @@ func New(dialFunc DialFunc, opts ...Option) (*Pool, error) {
 		mutex:   &sync.RWMutex{},
 	}
 
-	// check in background if any connection should be isClosed
+	// run background cleanup goroutine
+	// this goroutine will clean up all the connections that should be cleaned
+	// this task is mandatory, however you can change the interval when it's running
+	// I still suggest to keep the interval low
 	go func() {
 		tick := time.NewTicker(result.options.cleanupInterval)
 		for {
