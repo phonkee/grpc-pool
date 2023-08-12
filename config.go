@@ -27,7 +27,8 @@ package grpc_pool
 import "time"
 
 // Config is compatible with viper config and mapstructure
-// It also supports defaults values
+//
+// It supports default values in struct tags, so you can use it with https://github.com/mcuadros/go-defaults
 type Config struct {
 	AcquireTimeout     time.Duration `mapstructure:"acquire_timeout" defaults:"50ms"`
 	CleanupInterval    time.Duration `mapstructure:"cleanup_interval" defaults:"5s"`
