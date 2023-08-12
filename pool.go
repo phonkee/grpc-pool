@@ -68,11 +68,14 @@ func New(dialFunc DialFunc, opts ...Option) (*Pool, error) {
 	// this task is mandatory, however you can change the interval when it's running
 	// I still suggest to keep the interval low
 	go func() {
+		// create ticker with cleanup interval
 		tick := time.NewTicker(result.options.cleanupInterval)
 		for {
 			select {
+			// if pool is closed, stop the goroutine
 			case <-result.close:
 				return
+			// if ticker ticks, run cleanup
 			case <-tick.C:
 				result.cleanupConnections()
 			}
@@ -329,6 +332,8 @@ func (p *Pool) cases(ctx context.Context) []reflect.SelectCase {
 // 1. If connection is idle for longer than maxIdleTime
 // 2. If connection is alive for longer than maxLifetime
 // 3. If there are connections that are not available anymore (e.g. closed by server)
+//
+// Warning! this method locks mutex for write (it's understandable why), but it's very fast.
 func (p *Pool) cleanupConnections() {
 	// we need exclusive access here
 	p.mutex.Lock()
