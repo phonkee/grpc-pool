@@ -1,9 +1,10 @@
 # grpc_pool
 
-High performance gRPC pool for client connections. 
-This `grpc.ClientConn` pool is special. It does not have single connection for single call, 
+High performance gRPC pool for `grpc.ClientConn` connections. 
+This pool is special. It does not have single connection for single call, 
 but rather it shares single connection for multiple concurrent calls. 
-This is useful when you don't want to overload your servers with too many gRPC method calls on single connection.
+This is useful when you don't want to overload your servers with too many gRPC method calls on 
+single connection.
 
 
 # algorithm
