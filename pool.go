@@ -150,7 +150,7 @@ main:
 				continue main
 			}
 			// create new connection with all the bells and whistles
-			cc, err := p.newConn(ctx)
+			cc, err := p.createConnection(ctx)
 			// lock back
 			p.mutex.Unlock()
 
@@ -446,8 +446,10 @@ func (p *Pool) dial(ctx context.Context, stats *Stats) (_ *conn, err error) {
 	return newConn(cc, p.options), nil
 }
 
-// newConn creates new connection with all necessary stuff, and returns it
-func (p *Pool) newConn(ctx context.Context) (*grpc.ClientConn, error) {
+// createConnection creates new connection with all necessary stuff, and returns it
+//
+// this method is private since it assumes that mutex is already for write
+func (p *Pool) createConnection(ctx context.Context) (*grpc.ClientConn, error) {
 	// check if max connections was set, and if we reached it
 	if p.options.maxConnections > 0 && uint(len(p.conns)) >= p.options.maxConnections {
 		return nil, ErrMaxConnectionsReached
