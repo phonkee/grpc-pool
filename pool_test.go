@@ -171,6 +171,19 @@ func TestPool_Acquire(t *testing.T) {
 			})
 		})
 
+		t.Run("test concurrent acquire", func(t *testing.T) {
+			p, _ := New(
+				df(t, func(conn *grpc.ClientConn) {}),
+				WithMaxConcurrency(10),
+			)
+
+			for i := 0; i < 100; i++ {
+				_, _ = p.Acquire(context.Background())
+			}
+
+			assert.Equal(t, 10, len(p.Stats().Connections))
+		})
+
 	})
 }
 
