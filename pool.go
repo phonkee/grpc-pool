@@ -248,9 +248,8 @@ func (p *Pool) Release(conn *grpc.ClientConn) error {
 	if !ok {
 		return ErrInvalidConnection
 	}
-	// check here for max lifetime
 
-	// check if we have full channel
+	// if connection has full channel, this means that someone is trying something fishy here
 	if pc.isFull() {
 		return ErrInvalidConnection
 	}
