@@ -280,7 +280,7 @@ func (p *Pool) Release(conn *grpc.ClientConn) error {
 func (p *Pool) Stats() *Stats {
 	p.mutex.RLock()
 	defer p.mutex.RUnlock()
-	return p.statsUnlocked()
+	return p.statsUnsafe()
 }
 
 // cases creates a slice of SelectCases that we will use in reflect.Select call.
@@ -454,7 +454,7 @@ func (p *Pool) newConn(ctx context.Context) (*grpc.ClientConn, error) {
 	}
 
 	// dial new connection
-	pc, err := p.dial(ctx, p.statsUnlocked())
+	pc, err := p.dial(ctx, p.statsUnsafe())
 	if err != nil {
 		return nil, err
 	}
@@ -470,10 +470,12 @@ func (p *Pool) newConn(ctx context.Context) (*grpc.ClientConn, error) {
 	return cc, nil
 }
 
-// statsUnlocked returns stats of the pool.
+// statsUnsafe returns stats of the pool.
+//
 // this method is private since it assumes that mutex is already locked
 // it's used safely and privately in other methods
-func (p *Pool) statsUnlocked() *Stats {
+// if you need to get stats, please use Stats method
+func (p *Pool) statsUnsafe() *Stats {
 	result := &Stats{}
 
 	// iterate over all connections and get stats
