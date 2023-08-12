@@ -252,8 +252,9 @@ func (p *Pool) Release(conn *grpc.ClientConn) error {
 
 	// check for max lifetime
 	if pc.Created.Add(p.options.maxLifetime).Before(time.Now()) {
-		// connection should be closed
+		// connection should be closed when all are returned
 		p.mutex.Lock()
+		// check if connection is in the pool
 		if index := slices.Index(p.conns, pc); index != -1 {
 			p.conns = slices.Delete(p.conns, index, index+1)
 		}
