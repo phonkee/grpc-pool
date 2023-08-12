@@ -322,8 +322,9 @@ func (p *Pool) cases(ctx context.Context) []reflect.SelectCase {
 // cleanupConnections checks if any connection should be isClosed.
 //
 // There are two scenarios which we check
-// 1. If connection is idle for longer than
+// 1. If connection is idle for longer than maxIdleTime
 // 2. If connection is alive for longer than maxLifetime
+// 3. If there are connections that are not available anymore (e.g. closed by server)
 func (p *Pool) cleanupConnections() {
 	// we need exclusive access here
 	p.mutex.Lock()
