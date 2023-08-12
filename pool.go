@@ -89,7 +89,7 @@ type Pool struct {
 	// slice of connections that are currently available in correct order (used because map is not ordered)
 	// this slice is used to select on.
 	conns []*conn
-	// mutex to protect access to storage and conns
+	// mutex to protect read/write access to storage and conns
 	mutex *sync.RWMutex
 	// pool options
 	options *options
