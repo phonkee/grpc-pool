@@ -244,8 +244,20 @@ func (p *Pool) Release(conn *grpc.ClientConn) error {
 	pc, ok := p.connMap[conn]
 	p.mutex.RUnlock()
 
+	// connection was not found, some problem?
 	if !ok {
 		return ErrInvalidConnection
+	}
+	// check here for max lifetime
+
+	// check for max lifetime
+	if pc.Created.Add(p.options.maxLifetime).Before(time.Now()) {
+		// connection should be closed
+		p.mutex.Lock()
+		if index := slices.Index(p.conns, pc); index != -1 {
+			p.conns = slices.Delete(p.conns, index, index+1)
+		}
+		p.mutex.Unlock()
 	}
 
 	// now we need to do multiple things
