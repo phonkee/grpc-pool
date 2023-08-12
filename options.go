@@ -162,9 +162,9 @@ func (o *options) log(ctx context.Context, msg string, args ...any) {
 		return
 	}
 
+	// prevent panic in logger to bubble up
 	defer func() {
 		if r := recover(); r != nil {
-			// do nothing
 		}
 	}()
 
