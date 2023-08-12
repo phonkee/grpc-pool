@@ -307,7 +307,8 @@ func (p *Pool) cases(ctx context.Context) []reflect.SelectCase {
 		reflect.SelectCase{
 			Dir:  reflect.SelectRecv,
 			Chan: reflect.ValueOf(time.After(p.options.acquireTimeout)),
-		})
+		},
+	)
 
 	// add all channels in order
 	for _, conn := range p.conns {
