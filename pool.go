@@ -474,7 +474,9 @@ func (p *Pool) createConnection(ctx context.Context) (*grpc.ClientConn, error) {
 // it's used safely and privately in other methods
 // if you need to get stats, please use Stats method
 func (p *Pool) statsUnsafe() *Stats {
-	result := &Stats{}
+	result := &Stats{
+		Connections: make([]ConnStats, 0, len(p.connMap)),
+	}
 
 	// iterate over all connections and get stats
 	for _, info := range p.connMap {
