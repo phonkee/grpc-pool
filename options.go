@@ -141,7 +141,7 @@ type options struct {
 	maxIdleTime        time.Duration
 	maxIdleConnections uint
 	cleanupInterval    time.Duration
-	nonBlocking        bool
+	nonBlocking        bool // currently no way to change this (but believe me you want blocking)
 	logger             Logger
 }
 
