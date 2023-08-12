@@ -24,7 +24,11 @@
 
 package grpc_pool
 
-import "time"
+import (
+	"context"
+	"fmt"
+	"time"
+)
 
 // Option is a function that can be passed to New to configure the pool.
 type Option func(*options) error
@@ -49,6 +53,14 @@ func WithCleanupInterval(interval time.Duration) Option {
 			return ErrInvalidCleanupInterval
 		}
 		o.cleanupInterval = interval
+		return nil
+	}
+}
+
+// WithLogger sets the logger for the pool.
+func WithLogger(logger Logger) Option {
+	return func(o *options) error {
+		o.logger = logger
 		return nil
 	}
 }
@@ -123,6 +135,7 @@ type options struct {
 	maxIdleConnections uint
 	cleanupInterval    time.Duration
 	nonBlocking        bool
+	logger             Logger
 }
 
 // apply applies all options to the options object and returns error if any passed Option returned error
@@ -133,4 +146,23 @@ func (o *options) apply(opts ...Option) error {
 		}
 	}
 	return nil
+}
+
+// log logs message in safe way
+func (o *options) log(ctx context.Context, msg string, args ...any) {
+	if o.logger == nil {
+		return
+	}
+
+	defer func() {
+		if r := recover(); r != nil {
+			// do nothing
+		}
+	}()
+
+	// prepare message
+	final := fmt.Sprintf(msg, args...)
+
+	// now log to actual logger
+	o.logger.Log(ctx, final)
 }

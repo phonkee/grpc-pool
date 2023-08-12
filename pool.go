@@ -403,13 +403,13 @@ func (p *Pool) cleanupConnections() {
 	for _, conn := range deletedConns {
 		info, ok := p.connMap[conn]
 		if !ok {
-			// TODO: notice here
+			p.options.log(context.Background(), "connection is not in map: %v", conn)
 			continue
 		}
 
 		// we have all connections released back, we should delete connection from map and close it
 		if err := info.close(); err != nil {
-			// TODO: warn here?
+			p.options.log(context.Background(), "closing connection returned error: %v", err)
 		}
 
 		delete(p.connMap, info.ClientConn)
