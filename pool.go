@@ -437,7 +437,7 @@ func (p *Pool) dial(ctx context.Context, stats *Stats) (_ *conn, err error) {
 
 	// if dialing failed, return error
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w: %w", ErrDialFailed, err)
 	}
 
 	return newConn(cc, p.options), nil
