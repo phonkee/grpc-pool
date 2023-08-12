@@ -26,6 +26,7 @@ package grpc_pool
 
 import "time"
 
+// if these are changed, please change also config values in config.go
 const (
 	// DefaultAcquireTimeout is the default timeout for acquiring a connection from the pool using reflect.Select
 	DefaultAcquireTimeout = 50 * time.Millisecond
