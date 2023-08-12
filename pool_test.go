@@ -106,7 +106,7 @@ func TestPool_Acquire(t *testing.T) {
 			}
 
 			assert.Equal(t, 2, called)
-			assert.Equal(t, 2, len(p.connMap))
+			assert.Equal(t, 2, len(p.storage))
 
 			for i := 0; i < 3; i++ {
 				c, err := p.Acquire(ctx)
@@ -115,7 +115,7 @@ func TestPool_Acquire(t *testing.T) {
 			}
 
 			assert.Equal(t, 3, called)
-			assert.Equal(t, 3, len(p.connMap))
+			assert.Equal(t, 3, len(p.storage))
 		})
 
 		t.Run("test max connections", func(t *testing.T) {
@@ -167,7 +167,7 @@ func TestPool_Acquire(t *testing.T) {
 				// now do cleanup
 				p.cleanupConnections()
 
-				assert.Equal(t, 2, len(p.connMap))
+				assert.Equal(t, 2, len(p.storage))
 			})
 		})
 
@@ -188,11 +188,11 @@ func TestPool_Forget(t *testing.T) {
 			cf()
 		}
 
-		assert.Equal(t, 2, len(p.connMap))
+		assert.Equal(t, 2, len(p.storage))
 
 		_ = p.Forget(c)
 		p.cleanupConnections()
 
-		assert.Equal(t, 1, len(p.connMap))
+		assert.Equal(t, 1, len(p.storage))
 	})
 }

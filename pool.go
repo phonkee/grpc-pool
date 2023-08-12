@@ -57,7 +57,7 @@ func New(dialFunc DialFunc, opts ...Option) (*Pool, error) {
 	}
 	result := &Pool{
 		options: o,
-		connMap: make(map[*grpc.ClientConn]*conn),
+		storage: make(map[*grpc.ClientConn]*conn),
 		mutex:   &sync.RWMutex{},
 	}
 
@@ -79,11 +79,12 @@ func New(dialFunc DialFunc, opts ...Option) (*Pool, error) {
 
 // Pool implementation
 type Pool struct {
-	// map of connections and their pool connections
-	connMap map[*grpc.ClientConn]*conn
+	// storage stores all the connections (even to be closed etc...)
+	storage map[*grpc.ClientConn]*conn
 	// slice of connections that are currently available in correct order (used because map is not ordered)
+	// this slice is used to select on.
 	conns []*conn
-	// mutex to protect access to connMap and conns
+	// mutex to protect access to storage and conns
 	mutex *sync.RWMutex
 	// pool options
 	options *options
@@ -172,7 +173,7 @@ main:
 
 			// now get the pool connection, so we can update a thing or two
 			p.mutex.RLock()
-			pc, ok := p.connMap[cc]
+			pc, ok := p.storage[cc]
 			p.mutex.RUnlock()
 			// if we can't find it, might be some concurrent stealing
 			if !ok {
@@ -217,7 +218,7 @@ func (p *Pool) Close() error {
 // After calling this method, you don't need to call Release.
 func (p *Pool) Forget(cc *grpc.ClientConn) error {
 	p.mutex.RLock()
-	pc, ok := p.connMap[cc]
+	pc, ok := p.storage[cc]
 	p.mutex.RUnlock()
 	if !ok {
 		return ErrInvalidConnection
@@ -239,7 +240,7 @@ func (p *Pool) Forget(cc *grpc.ClientConn) error {
 func (p *Pool) Release(conn *grpc.ClientConn) error {
 	// release connection
 	p.mutex.RLock()
-	pc, ok := p.connMap[conn]
+	pc, ok := p.storage[conn]
 	p.mutex.RUnlock()
 
 	// connection was not found, some problem?
@@ -332,7 +333,7 @@ func (p *Pool) cleanupConnections() {
 	idleConns := make([]*conn, 0, len(p.conns))
 
 	// iterate over connections and remove those that should be dead by now
-	for _, info := range p.connMap {
+	for _, info := range p.storage {
 
 		// check deadline here
 		if info.Created.Add(p.options.maxLifetime).Before(time.Now()) {
@@ -386,7 +387,7 @@ func (p *Pool) cleanupConnections() {
 		}
 
 		// go over connections and close those that are not available anymore and have full channel
-		for _, info := range p.connMap {
+		for _, info := range p.storage {
 			if _, ok := availConns[info]; ok {
 				continue
 			}
@@ -399,7 +400,7 @@ func (p *Pool) cleanupConnections() {
 
 	// mpw delete all connections that are isClosed
 	for _, conn := range deletedConns {
-		info, ok := p.connMap[conn]
+		info, ok := p.storage[conn]
 		if !ok {
 			p.options.log(context.Background(), "connection is not in map: %v", conn)
 			continue
@@ -410,7 +411,7 @@ func (p *Pool) cleanupConnections() {
 			p.options.log(context.Background(), "closing connection returned error: %v", err)
 		}
 
-		delete(p.connMap, info.ClientConn)
+		delete(p.storage, info.ClientConn)
 	}
 
 }
@@ -463,7 +464,7 @@ func (p *Pool) createConnection(ctx context.Context) (*grpc.ClientConn, error) {
 	// increment usage
 	pc.Usage.Add(1)
 
-	p.connMap[pc.ClientConn] = pc
+	p.storage[pc.ClientConn] = pc
 	p.conns = append(p.conns, pc)
 	return cc, nil
 }
@@ -475,11 +476,11 @@ func (p *Pool) createConnection(ctx context.Context) (*grpc.ClientConn, error) {
 // if you need to get stats, please use Stats method
 func (p *Pool) statsUnsafe() *Stats {
 	result := &Stats{
-		Connections: make([]ConnStats, 0, len(p.connMap)),
+		Connections: make([]ConnStats, 0, len(p.storage)),
 	}
 
 	// iterate over all connections and get stats
-	for _, info := range p.connMap {
+	for _, info := range p.storage {
 		result.Connections = append(result.Connections, info.stats(p.options))
 	}
 
