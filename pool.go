@@ -48,19 +48,14 @@ const (
 // New creates a new pool of gRPC connections.
 // Options can be passed to configure the pool.
 func New(dialFunc DialFunc, opts ...Option) (*Pool, error) {
-	// check if dial function is valid
-	if dialFunc == nil {
-		return nil, ErrInvalidDialFunc
-	}
-	o := newOptions()
+	o := newOptions(dialFunc)
 	if err := o.apply(opts...); err != nil {
 		return nil, err
 	}
 	result := &Pool{
-		dialFunc: dialFunc,
-		options:  o,
-		connMap:  make(map[*grpc.ClientConn]*conn),
-		mutex:    &sync.RWMutex{},
+		options: o,
+		connMap: make(map[*grpc.ClientConn]*conn),
+		mutex:   &sync.RWMutex{},
 	}
 
 	// check in background if any connection should be isClosed
@@ -81,8 +76,6 @@ func New(dialFunc DialFunc, opts ...Option) (*Pool, error) {
 
 // Pool implementation
 type Pool struct {
-	// function that will be used to dial new connection
-	dialFunc DialFunc
 	// map of connections and their pool connections
 	connMap map[*grpc.ClientConn]*conn
 	// slice of connections that are currently available in correct order (used because map is not ordered)
@@ -436,7 +429,7 @@ func (p *Pool) dial(ctx context.Context, stats *Stats) (_ *conn, err error) {
 	}()
 
 	// first dial the connection
-	cc, err := p.dialFunc(ctx, stats, opts...)
+	cc, err := p.options.dialFunc(ctx, stats, opts...)
 
 	// if dialing failed, return error
 	if err != nil {

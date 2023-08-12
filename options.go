@@ -115,8 +115,9 @@ func WithMaxLifetime(max time.Duration) Option {
 }
 
 // newOptions creates a new options object with default values.
-func newOptions() *options {
+func newOptions(df DialFunc) *options {
 	return &options{
+		dialFunc:        df,
 		acquireTimeout:  DefaultAcquireTimeout,
 		maxConcurrency:  DefaultMaxConcurrency,
 		maxIdleTime:     DefaultMaxIdleTime,
@@ -127,6 +128,7 @@ func newOptions() *options {
 
 // options holds all options for the pool.
 type options struct {
+	dialFunc           DialFunc
 	acquireTimeout     time.Duration
 	maxConcurrency     uint
 	maxConnections     uint
@@ -139,7 +141,12 @@ type options struct {
 }
 
 // apply applies all options to the options object and returns error if any passed Option returned error
+//
+// apply also checks if passed dial func is valid
 func (o *options) apply(opts ...Option) error {
+	if o.dialFunc == nil {
+		return ErrInvalidDialFunc
+	}
 	for _, opt := range opts {
 		if err := opt(o); err != nil {
 			return err
