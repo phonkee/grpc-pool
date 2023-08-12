@@ -35,11 +35,11 @@ type Stats struct {
 
 // ConnStats represents pool connection statistics
 type ConnStats struct {
-	Target     string    `json:"target"`
-	Created    time.Time `json:"created"`
-	Deadline   time.Time `json:"deadline"`
-	LastChange time.Time `json:"last_change"`
-	Working    uint      `json:"working"`
-	Idle       uint      `json:"idle"`
-	Used       uint64    `json:"used"`
+	Target       string    `json:"target"`
+	Created      time.Time `json:"created"`
+	Deadline     time.Time `json:"deadline"`
+	LastChange   time.Time `json:"last_change"`
+	WorkingConns uint      `json:"working_conns"`
+	IdleConns    uint      `json:"idle_conns"`
+	Usage        uint64    `json:"used"`
 }

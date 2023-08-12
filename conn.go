@@ -89,12 +89,12 @@ func (p *conn) stats(opts *options) ConnStats {
 	// store channel length to be consistent in results (concurrency issues)
 	l := uint(len(p.ClientConnChan))
 	return ConnStats{
-		Target:     p.ClientConn.Target(),
-		Created:    p.Created,
-		Deadline:   p.Created.Add(opts.maxLifetime),
-		LastChange: *(p.LastChange.Load()),
-		Working:    opts.maxConcurrency - l,
-		Idle:       l,
-		Used:       p.Usage.Load(),
+		Target:       p.ClientConn.Target(),
+		Created:      p.Created,
+		Deadline:     p.Created.Add(opts.maxLifetime),
+		LastChange:   *(p.LastChange.Load()),
+		WorkingConns: opts.maxConcurrency - l,
+		IdleConns:    l,
+		Usage:        p.Usage.Load(),
 	}
 }
