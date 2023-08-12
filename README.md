@@ -4,6 +4,18 @@ High performance gRPC pool for client connections. It's not as usual pool, it do
 but rather it shares single connection for multiple concurrent calls. This is useful when you don't want to overload
 your servers with too many gRPC method calls on single connection.
 
+# algorithm
+
+So how does it work? It's pretty simple. It uses reflect.Select to select from multiple channels.
+Two channels represent context and acquire timeout, and rest of channels represent connections.
+There are 3 cases for select:
+
+* context is done - return context Error
+* acquire timeout is done - retry again
+* connection is ready - return connection
+
+Whole pool is based on this idea. There are some additional features but basically this is how the core works.
+
 # features
 
 gRPC pool supports following features:
@@ -58,18 +70,6 @@ defer pool.Release(conn)
 
 gRPC pool provides stats about pool. You can use it to monitor your pool. It is safe to use in concurrent environment.
 However please note that it can have delay if pool is dialing new connection.
-
-# algorithm
-
-So how does it work? It's pretty simple. It uses reflect.Select to select from multiple channels.
-Two channels represent context and acquire timeout, and rest of channels represent connections.
-There are 3 cases for select:
-
-* context is done - return context Error
-* acquire timeout is done - retry again
-* connection is ready - return connection
-
-Whole pool is based on this idea. There are some additional features but basically this is how the core works.
 
 ```go
 stats := pool.Stats()
