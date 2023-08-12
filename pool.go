@@ -123,6 +123,7 @@ main:
 			chosen, recv, ok = reflect.Select(cases)
 		} else { // special case when we don't have any connections, and we want directly dial new connection
 			// timeout forces us to dial new connection
+			// this is optimization when we don't have any connections, and we want to dial new one
 			chosen = ChosenAcquireTimeout
 		}
 
