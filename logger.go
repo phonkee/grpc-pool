@@ -31,3 +31,11 @@ type Logger interface {
 	// Log logs a message, this is useful for debugging purposes
 	Log(ctx context.Context, msg string)
 }
+
+// LoggerFunc eases the creation of custom loggers
+type LoggerFunc func(ctx context.Context, msg string)
+
+// Log implements the Logger interface
+func (f LoggerFunc) Log(ctx context.Context, msg string) {
+	f(ctx, msg)
+}
