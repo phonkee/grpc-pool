@@ -61,6 +61,8 @@ type conn struct {
 	// ClientConn is the actual connection, it is held here, so we can access it easily
 	ClientConn *grpc.ClientConn
 	// ClientConnChan is the channel of prepared connections, it is used in main select
+	// when connection is created, we create channel with maxConcurrency capacity and fill it with connectiion,
+	// this is necessary for pool algorithm to work
 	ClientConnChan chan *grpc.ClientConn
 	// LastChange is the time when the last change happened, it is used to determine if the connection is idle
 	LastChange atomic.Pointer[time.Time]

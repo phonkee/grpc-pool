@@ -36,6 +36,7 @@ import (
 	"time"
 )
 
+// These chosen constants are in strict order, so we can use them to check which channel was selected
 const (
 	// ChosenContextDeadline is returned from Select when context deadline is reached
 	ChosenContextDeadline = iota
