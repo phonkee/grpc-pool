@@ -115,7 +115,12 @@ func WithMaxLifetime(max time.Duration) Option {
 }
 
 // newOptions creates a new options object with default values.
-func newOptions(df DialFunc) *options {
+//
+// It returns error if DialFunc is nil.
+func newOptions(df DialFunc) (*options, error) {
+	if df == nil {
+		return nil, ErrInvalidDialFunc
+	}
 	return &options{
 		dialFunc:        df,
 		acquireTimeout:  DefaultAcquireTimeout,
@@ -123,7 +128,7 @@ func newOptions(df DialFunc) *options {
 		maxIdleTime:     DefaultMaxIdleTime,
 		maxLifetime:     DefaultMaxLifetime,
 		cleanupInterval: DefaultCleanupInterval,
-	}
+	}, nil
 }
 
 // options holds all options for the pool.
@@ -141,12 +146,8 @@ type options struct {
 }
 
 // apply applies all options to the options object and returns error if any passed Option returned error
-//
-// apply also checks if passed dial func is valid
 func (o *options) apply(opts ...Option) error {
-	if o.dialFunc == nil {
-		return ErrInvalidDialFunc
-	}
+
 	for _, opt := range opts {
 		if err := opt(o); err != nil {
 			return err

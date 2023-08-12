@@ -48,7 +48,10 @@ const (
 // New creates a new pool of gRPC connections.
 // Options can be passed to configure the pool.
 func New(dialFunc DialFunc, opts ...Option) (*Pool, error) {
-	o := newOptions(dialFunc)
+	o, err := newOptions(dialFunc)
+	if err != nil {
+		return nil, err
+	}
 	if err := o.apply(opts...); err != nil {
 		return nil, err
 	}
