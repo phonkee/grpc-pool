@@ -6,13 +6,13 @@ your servers with too many gRPC method calls on single connection.
 
 # algorithm
 
-So how does it work? It's pretty simple. It uses reflect.Select to select from multiple channels.
+So how does it work? It's pretty simple. It uses reflect.Select to select on multiple channels.
 Two channels represent context and acquire timeout, and rest of channels represent connections.
-There are 3 cases for select:
+Select can return from following channels:
 
-* context is done - return context Error
-* acquire timeout is done - try to create new connection
-* connection is ready - return connection
+* `0.` context is done - return context Error
+* `1.` acquire timeout is done - try to create new connection
+* `2..n` connection is ready - return connection
 
 Whole pool is based on this idea. There are some additional features but basically this is how the core works.
 
