@@ -359,6 +359,8 @@ func (p *Pool) cleanupConnections() {
 		}
 	}
 
+	deletedConns := make([]*grpc.ClientConn, 0)
+
 	// check if we found any idle connections to be isClosed
 	if len(idleConns) > 0 {
 		// check if idle connections are more than max idle connections
@@ -372,12 +374,7 @@ func (p *Pool) cleanupConnections() {
 				p.conns = slices.Delete(p.conns, index, index+1)
 			}
 
-			// we have all connections released back, we should delete connection from map and close it
-			if err := info.close(); err != nil {
-				// TODO: warn here?
-			}
-
-			delete(p.connMap, info.ClientConn)
+			deletedConns = append(deletedConns, info.ClientConn)
 		}
 	}
 
@@ -395,6 +392,18 @@ func (p *Pool) cleanupConnections() {
 		if !info.isFull() {
 			continue
 		}
+		deletedConns = append(deletedConns, info.ClientConn)
+
+	}
+
+	// mpw delete all connections that are isClosed
+	for _, conn := range deletedConns {
+		info, ok := p.connMap[conn]
+		if !ok {
+			// TODO: notice here
+			continue
+		}
+
 		// we have all connections released back, we should delete connection from map and close it
 		if err := info.close(); err != nil {
 			// TODO: warn here?
@@ -402,6 +411,7 @@ func (p *Pool) cleanupConnections() {
 
 		delete(p.connMap, info.ClientConn)
 	}
+
 }
 
 // dial dials a new connection and returns it
