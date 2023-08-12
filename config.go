@@ -40,7 +40,7 @@ type Config struct {
 }
 
 // Options returns options by given config
-func (c *Config) Options(df DialFunc) []Option {
+func (c *Config) Options() []Option {
 	return []Option{
 		WithAcquireTimeout(c.AcquireTimeout),
 		WithCleanupInterval(c.CleanupInterval),
