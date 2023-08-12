@@ -448,9 +448,10 @@ func (p *Pool) dial(ctx context.Context, stats *Stats) (_ *conn, err error) {
 	return newConn(cc, p.options), nil
 }
 
-// createConnection creates new connection with all necessary stuff, and returns it
+// createConnection creates new connection, sets connection info to available connections, and returns single
+// connection so the caller does not need to wait for it.
 //
-// this method is private since it assumes that mutex is already for write
+// this method assumes that mutex is already locked for write access.
 func (p *Pool) createConnection(ctx context.Context) (*grpc.ClientConn, error) {
 	// check if max connections was set, and if we reached it
 	if p.options.maxConnections > 0 && uint(len(p.conns)) >= p.options.maxConnections {
