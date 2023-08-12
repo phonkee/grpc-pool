@@ -32,18 +32,16 @@ import (
 
 // newConn creates new pool connection
 func newConn(cc *grpc.ClientConn, options *options) *conn {
-	now := time.Now()
-
 	// now create new pool connection
 	result := &conn{
-		Created:        now,
+		Created:        time.Now(),
 		ClientConnChan: make(chan *grpc.ClientConn, options.maxConcurrency),
 		ClientConn:     cc,
 		LastChange:     atomic.Pointer[time.Time]{},
 		Usage:          new(atomic.Uint64),
 	}
 
-	result.LastChange.Store(&now)
+	result.LastChange.Store(ptrTo(time.Now()))
 
 	// now add all necessary connections
 	for i := 0; uint(i) < options.maxConcurrency; i++ {
