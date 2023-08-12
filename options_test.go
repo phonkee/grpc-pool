@@ -34,7 +34,7 @@ import (
 type nullLogger struct {
 }
 
-func (n nullLogger) Log(ctx context.Context, msg string) {
+func (n nullLogger) Log(_ context.Context, _ string) {
 }
 
 func TestOptions(t *testing.T) {
