@@ -106,7 +106,7 @@ func TestPool_Acquire(t *testing.T) {
 			}
 
 			assert.Equal(t, 2, called)
-			assert.Equal(t, 2, len(p.connMap))
+			assert.Equal(t, 2, len(p.storage))
 
 			for i := 0; i < 3; i++ {
 				c, err := p.Acquire(ctx)
@@ -115,7 +115,7 @@ func TestPool_Acquire(t *testing.T) {
 			}
 
 			assert.Equal(t, 3, called)
-			assert.Equal(t, 3, len(p.connMap))
+			assert.Equal(t, 3, len(p.storage))
 		})
 
 		t.Run("test max connections", func(t *testing.T) {
@@ -167,8 +167,45 @@ func TestPool_Acquire(t *testing.T) {
 				// now do cleanup
 				p.cleanupConnections()
 
-				assert.Equal(t, 2, len(p.connMap))
+				assert.Equal(t, 2, len(p.storage))
 			})
 		})
+
+		t.Run("test concurrent acquire", func(t *testing.T) {
+			p, _ := New(
+				df(t, func(conn *grpc.ClientConn) {}),
+				WithMaxConcurrency(10),
+			)
+
+			for i := 0; i < 100; i++ {
+				_, _ = p.Acquire(context.Background())
+			}
+
+			assert.Equal(t, 10, len(p.Stats().Connections))
+		})
+
+	})
+}
+
+func TestPool_Forget(t *testing.T) {
+	t.Run("test forget", func(t *testing.T) {
+		p, _ := New(
+			df(t, func(conn *grpc.ClientConn) {}),
+			WithMaxConcurrency(2),
+		)
+
+		var c *grpc.ClientConn
+		for i := 0; i < 3; i++ {
+			ctx, cf := context.WithTimeout(context.Background(), time.Second)
+			c, _ = p.Acquire(ctx)
+			cf()
+		}
+
+		assert.Equal(t, 2, len(p.storage))
+
+		_ = p.Forget(c)
+		p.cleanupConnections()
+
+		assert.Equal(t, 1, len(p.storage))
 	})
 }

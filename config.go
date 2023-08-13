@@ -26,17 +26,28 @@ package grpc_pool
 
 import "time"
 
-// Stats represents pool statistics
-type Stats struct {
-	Connections []ConnStats `json:"connections"`
+// Config is compatible with viper config and mapstructure
+//
+// It supports default values in struct tags, so you can use it with https://github.com/mcuadros/go-defaults
+type Config struct {
+	AcquireTimeout     time.Duration `mapstructure:"acquire_timeout" defaults:"50ms"`
+	CleanupInterval    time.Duration `mapstructure:"cleanup_interval" defaults:"5s"`
+	MaxConcurrency     uint          `mapstructure:"max_concurrency" defaults:"1000"`
+	MaxConnections     uint          `mapstructure:"max_connections" defaults:"0"`
+	MaxIdleConnections uint          `mapstructure:"max_idle_connections" defaults:"0"`
+	MaxIdleTime        time.Duration `mapstructure:"max_idle_time" defaults:"60s"`
+	MaxLifetime        time.Duration `mapstructure:"max_lifetime" defaults:"30m"`
 }
 
-// ConnStats represents pool connection statistics
-type ConnStats struct {
-	Target     string    `json:"target"`
-	Created    time.Time `json:"created"`
-	Deadline   time.Time `json:"deadline"`
-	LastChange time.Time `json:"last_change"`
-	Working    int       `json:"working"`
-	Idle       int       `json:"idle"`
+// Options returns options by given config
+func (c *Config) Options() []Option {
+	return []Option{
+		WithAcquireTimeout(c.AcquireTimeout),
+		WithCleanupInterval(c.CleanupInterval),
+		WithMaxConcurrency(c.MaxConcurrency),
+		WithMaxConnections(c.MaxConnections),
+		WithMaxIdleConnections(c.MaxIdleConnections),
+		WithMaxIdleTime(c.MaxIdleTime),
+		WithMaxLifetime(c.MaxLifetime),
+	}
 }

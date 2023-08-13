@@ -24,17 +24,9 @@
 
 package grpc_pool
 
-import "errors"
-
-var (
-	ErrInvalidAcquireTimeout  = errors.New("invalid acquire timeout")
-	ErrInvalidCleanupInterval = errors.New("invalid cleanup interval")
-	ErrInvalidConnection      = errors.New("invalid connection")
-	ErrInvalidDialFunc        = errors.New("invalid dial func")
-	ErrDialFailed             = errors.New("dial failed")
-	ErrInvalidMaxConcurrency  = errors.New("invalid max concurrency")
-	ErrInvalidMaxIdleTime     = errors.New("invalid max idle time")
-	ErrInvalidMaxLifetime     = errors.New("invalid max lifetime")
-	ErrMaxConnectionsReached  = errors.New("max connections reached")
-	ErrAlreadyClosed          = errors.New("pool already isClosed")
-)
+// ptrTo returns a pointer to the given value
+//
+// This is helper function to not be very verbose in the code
+func ptrTo[T any](x T) *T {
+	return &x
+}

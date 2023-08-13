@@ -24,7 +24,11 @@
 
 package grpc_pool
 
-import "time"
+import (
+	"context"
+	"fmt"
+	"time"
+)
 
 // Option is a function that can be passed to New to configure the pool.
 type Option func(*options) error
@@ -53,8 +57,16 @@ func WithCleanupInterval(interval time.Duration) Option {
 	}
 }
 
+// WithLogger sets the logger for the pool.
+func WithLogger(logger Logger) Option {
+	return func(o *options) error {
+		o.logger = logger
+		return nil
+	}
+}
+
 // WithMaxConcurrency sets the maximum number of concurrent method calls on single connection.
-func WithMaxConcurrency(max int) Option {
+func WithMaxConcurrency(max uint) Option {
 	return func(o *options) error {
 		if max <= 0 {
 			return ErrInvalidMaxConcurrency
@@ -103,34 +115,62 @@ func WithMaxLifetime(max time.Duration) Option {
 }
 
 // newOptions creates a new options object with default values.
-func newOptions() *options {
+//
+// It returns error if DialFunc is nil.
+func newOptions(df DialFunc) (*options, error) {
+	if df == nil {
+		return nil, ErrInvalidDialFunc
+	}
 	return &options{
+		dialFunc:        df,
 		acquireTimeout:  DefaultAcquireTimeout,
 		maxConcurrency:  DefaultMaxConcurrency,
 		maxIdleTime:     DefaultMaxIdleTime,
 		maxLifetime:     DefaultMaxLifetime,
 		cleanupInterval: DefaultCleanupInterval,
-	}
+	}, nil
 }
 
 // options holds all options for the pool.
 type options struct {
+	dialFunc           DialFunc
 	acquireTimeout     time.Duration
-	maxConcurrency     int
+	maxConcurrency     uint
 	maxConnections     uint
 	maxLifetime        time.Duration
 	maxIdleTime        time.Duration
 	maxIdleConnections uint
 	cleanupInterval    time.Duration
-	nonBlocking        bool
+	nonBlocking        bool // currently no way to change this (but believe me you want blocking)
+	logger             Logger
 }
 
 // apply applies all options to the options object and returns error if any passed Option returned error
 func (o *options) apply(opts ...Option) error {
+
 	for _, opt := range opts {
 		if err := opt(o); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+// log logs message in safe way
+func (o *options) log(ctx context.Context, msg string, args ...any) {
+	if o.logger == nil {
+		return
+	}
+
+	// prevent panic in logger to bubble up
+	defer func() {
+		if r := recover(); r != nil {
+		}
+	}()
+
+	// prepare message
+	final := fmt.Sprintf(msg, args...)
+
+	// now log to actual logger
+	o.logger.Log(ctx, final)
 }

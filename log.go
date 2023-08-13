@@ -24,17 +24,18 @@
 
 package grpc_pool
 
-import "time"
+import "context"
 
-const (
-	// DefaultAcquireTimeout is the default timeout for acquiring a connection from the pool using reflect.Select
-	DefaultAcquireTimeout = 50 * time.Millisecond
-	// DefaultCleanupInterval is the default interval for cleaning up idle connections and connections that passed their max lifetime
-	DefaultCleanupInterval = 5 * time.Second
-	// DefaultMaxConcurrency is the default maximum number of concurrent connections
-	DefaultMaxConcurrency = 1000
-	// DefaultMaxIdleTime is the default maximum time to mark connection as idle when it wasn't used
-	DefaultMaxIdleTime = time.Second * 60
-	// DefaultMaxLifetime is the default maximum lifetime of a connection
-	DefaultMaxLifetime = 30 * time.Minute
-)
+// Logger interface for logging
+type Logger interface {
+	// Log logs a message, this is useful for debugging purposes
+	Log(ctx context.Context, msg string)
+}
+
+// LoggerFunc eases the creation of custom loggers
+type LoggerFunc func(ctx context.Context, msg string)
+
+// Log implements the Logger interface
+func (f LoggerFunc) Log(ctx context.Context, msg string) {
+	f(ctx, msg)
+}

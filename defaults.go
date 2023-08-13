@@ -24,30 +24,18 @@
 
 package grpc_pool
 
-import "sync/atomic"
+import "time"
 
-// atomicCounter is a simple counter that can be incremented and decremented atomically
-type atomicCounter struct {
-	value uint64
-}
-
-// Dec decrements the counter by 1
-func (c *atomicCounter) Dec() {
-	atomic.AddUint64(&c.value, ^uint64(0))
-}
-
-// Inc increments the counter by 1
-func (c *atomicCounter) Inc() {
-	atomic.AddUint64(&c.value, 1)
-}
-
-// Get returns the current value of the counter
-func (c *atomicCounter) Get() uint64 {
-	return atomic.LoadUint64(&c.value)
-}
-
-// ptrTo returns a pointer to the given value
-// This is helper function to not be very verbose
-func ptrTo[T any](x T) *T {
-	return &x
-}
+// if these are changed, please change also config values in config.go
+const (
+	// DefaultAcquireTimeout is the default timeout for acquiring a connection from the pool using reflect.Select
+	DefaultAcquireTimeout = 50 * time.Millisecond
+	// DefaultCleanupInterval is the default interval for cleaning up idle connections and connections that passed their max lifetime
+	DefaultCleanupInterval = 5 * time.Second
+	// DefaultMaxConcurrency is the default maximum number of concurrent connections
+	DefaultMaxConcurrency = 1000
+	// DefaultMaxIdleTime is the default maximum time to mark connection as idle when it wasn't used
+	DefaultMaxIdleTime = time.Second * 60
+	// DefaultMaxLifetime is the default maximum lifetime of a connection
+	DefaultMaxLifetime = 30 * time.Minute
+)

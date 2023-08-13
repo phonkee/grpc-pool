@@ -1,8 +1,24 @@
 # grpc_pool
 
-High performance gRPC pool for client connections. It's not as usual pool, it does not have single connection for single call,
-but rather it shares single connection for multiple concurrent calls. This is useful when you don't want to overload
-your servers with too many gRPC method calls on single connection.
+High performance gRPC pool for `grpc.ClientConn` connections. 
+This pool is special. It does not have single connection for single call, 
+but rather it shares single connection for multiple concurrent calls. 
+This is useful when you don't want to overload your servers with too many gRPC method calls on 
+single connection.
+
+
+# algorithm
+
+So how does it work? It's pretty simple. It uses reflect.Select to select on multiple channels.
+Two channels represent context and acquire timeout, and rest of channels represent connections.
+Select can return from following channels:
+
+* `0.` context is done - return context Error
+* `1.` acquire timeout is done - try to create new connection
+* `2..n` connection is ready - return connection
+
+Whole pool is based on this idea. There are some additional features but basically this is how the core works.
+There are additional features, but it's minor to this main idea.
 
 # features
 
@@ -16,9 +32,9 @@ gRPC pool supports following features:
 
 All have respective options `With...`. 
 
-# example configuration
+# example
 
-Let's have a look at example configuration. It configures most used options.
+Let's have a look at example use in code.
 
 ```go
 // create new pool
@@ -30,8 +46,8 @@ pool, err := grpc_pool.New(
         // create new connection (always pass options from grpc-pool)
         return grpc.DialContext(ctx, "localhost:50051", opts...) 
     }, 
-    // WithMaxConcurrentCalls sets how many concurrent calls can be made on single connection 
-    WithMaxConcurrentCalls(1000),
+    // WithMaxConcurrency sets how many concurrent calls can be made on single connection 
+    WithMaxConcurrency(1000),
     // WithMaxIdleConnections sets how many idle connections can be kept in pool
     WithMaxIdleConnections(5),
     // WithMaxIdleTime sets after how much time idle connection is marked as idle
@@ -53,6 +69,14 @@ if err != nil {
 // don't forget to return connection back to pool, otherwise you will leak connections, and pool will be confused.
 defer pool.Release(conn)
 ```
+
+# config
+
+gRPC pool provides config compatible with viper (mapstructure), and also provides default tags.
+These tags work with https://github.com/mcuadros/go-defaults .
+You still need to provide dial function, so there is some small amout of work necessary.
+Bear in mind that you can `squash` this config and add your additional settings.
+This makes it easy to extend.
 
 # stats
 

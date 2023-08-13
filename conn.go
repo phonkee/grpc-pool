@@ -32,21 +32,19 @@ import (
 
 // newConn creates new pool connection
 func newConn(cc *grpc.ClientConn, options *options) *conn {
-	now := time.Now()
-
 	// now create new pool connection
 	result := &conn{
-		Created:        now,
+		Created:        time.Now(),
 		ClientConnChan: make(chan *grpc.ClientConn, options.maxConcurrency),
 		ClientConn:     cc,
 		LastChange:     atomic.Pointer[time.Time]{},
-		Usage:          new(atomicCounter),
+		Usage:          new(atomic.Uint64),
 	}
 
-	result.LastChange.Store(&now)
+	result.LastChange.Store(ptrTo(time.Now()))
 
 	// now add all necessary connections
-	for i := 0; i < options.maxConcurrency; i++ {
+	for i := 0; uint(i) < options.maxConcurrency; i++ {
 		result.ClientConnChan <- cc
 	}
 	return result
@@ -61,11 +59,13 @@ type conn struct {
 	// ClientConn is the actual connection, it is held here, so we can access it easily
 	ClientConn *grpc.ClientConn
 	// ClientConnChan is the channel of prepared connections, it is used in main select
+	// when connection is created, we create channel with maxConcurrency capacity and fill it with connectiion,
+	// this is necessary for pool algorithm to work
 	ClientConnChan chan *grpc.ClientConn
 	// LastChange is the time when the last change happened, it is used to determine if the connection is idle
 	LastChange atomic.Pointer[time.Time]
 	// Usage is the counter of how many times the connection was used, usable only in stats
-	Usage *atomicCounter
+	Usage *atomic.Uint64
 }
 
 // isFull means channel has all connections
@@ -87,13 +87,14 @@ func (p *conn) close() error {
 // stats returns the stats of the connection, depending on options
 func (p *conn) stats(opts *options) ConnStats {
 	// store channel length to be consistent in results (concurrency issues)
-	l := len(p.ClientConnChan)
+	l := uint(len(p.ClientConnChan))
 	return ConnStats{
-		Target:     p.ClientConn.Target(),
-		Created:    p.Created,
-		Deadline:   p.Created.Add(opts.maxLifetime),
-		LastChange: *(p.LastChange.Load()),
-		Working:    opts.maxConcurrency - l,
-		Idle:       l,
+		Target:       p.ClientConn.Target(),
+		Created:      p.Created,
+		Deadline:     p.Created.Add(opts.maxLifetime),
+		LastChange:   *(p.LastChange.Load()),
+		WorkingConns: opts.maxConcurrency - l,
+		IdleConns:    l,
+		Usage:        p.Usage.Load(),
 	}
 }

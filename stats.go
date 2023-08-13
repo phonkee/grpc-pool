@@ -24,17 +24,22 @@
 
 package grpc_pool
 
-import "errors"
-
-var (
-	ErrInvalidAcquireTimeout  = errors.New("invalid acquire timeout")
-	ErrInvalidCleanupInterval = errors.New("invalid cleanup interval")
-	ErrInvalidConnection      = errors.New("invalid connection")
-	ErrInvalidDialFunc        = errors.New("invalid dial func")
-	ErrDialFailed             = errors.New("dial failed")
-	ErrInvalidMaxConcurrency  = errors.New("invalid max concurrency")
-	ErrInvalidMaxIdleTime     = errors.New("invalid max idle time")
-	ErrInvalidMaxLifetime     = errors.New("invalid max lifetime")
-	ErrMaxConnectionsReached  = errors.New("max connections reached")
-	ErrAlreadyClosed          = errors.New("pool already isClosed")
+import (
+	"time"
 )
+
+// Stats represents pool statistics
+type Stats struct {
+	Connections []ConnStats `json:"connections"`
+}
+
+// ConnStats represents pool connection statistics
+type ConnStats struct {
+	Target       string    `json:"target"`
+	Created      time.Time `json:"created"`
+	Deadline     time.Time `json:"deadline"`
+	LastChange   time.Time `json:"last_change"`
+	WorkingConns uint      `json:"working_conns"`
+	IdleConns    uint      `json:"idle_conns"`
+	Usage        uint64    `json:"used"`
+}
