@@ -40,9 +40,9 @@ import (
 // Warning: do not change the order of these constants, it will break main loop select.
 const (
 	// ChosenContextDeadline is returned from Select when context deadline is reached
-	ChosenContextDeadline = iota
+	ChosenContextDeadline = 0
 	// ChosenAcquireTimeout is returned from Select when acquire timeout is reached
-	ChosenAcquireTimeout
+	ChosenAcquireTimeout = 1
 )
 
 // New creates a new pool of gRPC connections.
