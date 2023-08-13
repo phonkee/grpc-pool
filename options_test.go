@@ -26,16 +26,11 @@ package grpc_pool
 
 import (
 	"context"
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
 )
-
-type nullLogger struct {
-}
-
-func (n nullLogger) Log(_ context.Context, _ string) {
-}
 
 func TestOptions(t *testing.T) {
 	t.Run("test nil dial function", func(t *testing.T) {
@@ -54,10 +49,10 @@ func TestOptions(t *testing.T) {
 		assert.ErrorIs(t, ErrInvalidCleanupInterval, o.apply(WithCleanupInterval(0)))
 	})
 	t.Run("test WithLogger", func(t *testing.T) {
-		l := nullLogger{}
+		l := LoggerFunc(func(ctx context.Context, msg string) {})
 		o, _ := newOptions(df(t))
 		assert.NoError(t, o.apply(WithLogger(l)))
-		assert.Equal(t, l, o.logger)
+		assert.Equal(t, fmt.Sprintf("%p", l), fmt.Sprintf("%p", o.logger))
 	})
 	t.Run("test WithMaxConcurrency", func(t *testing.T) {
 		o, _ := newOptions(df(t))
