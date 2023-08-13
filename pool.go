@@ -141,11 +141,11 @@ main:
 
 			// safely get number of connections that we provide (not idle, not closed)
 			p.mutex.RLock()
-			conns := len(p.conns)
+			connsLen := len(p.conns)
 			p.mutex.RUnlock()
 
 			// if max connections is set, and we reached it, return error
-			if p.options.maxConnections > 0 && uint(conns) >= p.options.maxConnections {
+			if p.options.maxConnections > 0 && uint(connsLen) >= p.options.maxConnections {
 				return nil, fmt.Errorf("%w: %v", ctx.Err(), ErrMaxConnectionsReached)
 			}
 
