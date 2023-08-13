@@ -70,6 +70,14 @@ if err != nil {
 defer pool.Release(conn)
 ```
 
+# config
+
+gRPC pool provides config compatible with viper (mapstructure), and also provides default tags.
+These tags work with https://github.com/mcuadros/go-defaults .
+You still need to provide dial function, so there is some small amout of work necessary.
+Bear in mind that you can `squash` this config and add your additional settings.
+This makes it easy to extend.
+
 # stats
 
 gRPC pool provides stats about pool. You can use it to monitor your pool. It is safe to use in concurrent environment.
