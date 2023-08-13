@@ -32,9 +32,9 @@ gRPC pool supports following features:
 
 All have respective options `With...`. 
 
-# example configuration
+# example
 
-Let's have a look at example configuration. It configures most used options.
+Let's have a look at example use in code.
 
 ```go
 // create new pool
