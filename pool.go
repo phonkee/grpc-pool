@@ -46,6 +46,8 @@ const (
 )
 
 // New creates a new pool of gRPC connections.
+//
+// DialFUnc is required because pool cannot work without it.
 // Options can be passed to configure the pool.
 func New(dialFunc DialFunc, opts ...Option) (*Pool, error) {
 	// first instantiate default options with dialFunc
