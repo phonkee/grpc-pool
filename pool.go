@@ -424,33 +424,6 @@ func (p *Pool) cleanupConnections() {
 
 }
 
-// dial dials a new connection and returns it
-func (p *Pool) dial(ctx context.Context, stats *Stats) (_ *conn, err error) {
-
-	// currently only blocking functions are supported
-	opts := make([]grpc.DialOption, 0)
-	if !p.options.nonBlocking {
-		opts = append(opts, grpc.WithBlock())
-	}
-
-	// handle panic in dial
-	defer func() {
-		if r := recover(); r != nil {
-			err = fmt.Errorf("%w: %v", ErrDialFailed, r)
-		}
-	}()
-
-	// first dial the connection
-	cc, err := p.options.dialFunc(ctx, stats, opts...)
-
-	// if dialing failed, return error
-	if err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrDialFailed, err)
-	}
-
-	return newConn(cc, p.options), nil
-}
-
 // createConnection creates new connection, sets connection info to available connections, and returns single
 // connection so the caller does not need to wait for it.
 //
@@ -481,6 +454,33 @@ func (p *Pool) createConnection(ctx context.Context) (*grpc.ClientConn, error) {
 
 	// return single connection that we prepared for caller
 	return cc, nil
+}
+
+// dial dials a new connection and returns it
+func (p *Pool) dial(ctx context.Context, stats *Stats) (_ *conn, err error) {
+
+	// currently only blocking functions are supported
+	opts := make([]grpc.DialOption, 0)
+	if !p.options.nonBlocking {
+		opts = append(opts, grpc.WithBlock())
+	}
+
+	// handle panic in dial
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("%w: %v", ErrDialFailed, r)
+		}
+	}()
+
+	// first dial the connection
+	cc, err := p.options.dialFunc(ctx, stats, opts...)
+
+	// if dialing failed, return error
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrDialFailed, err)
+	}
+
+	return newConn(cc, p.options), nil
 }
 
 // statsUnsafe returns stats of the pool.
