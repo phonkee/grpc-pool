@@ -146,7 +146,7 @@ main:
 
 			// if max connections is set, and we reached it, return error
 			if p.options.maxConnections > 0 && uint(connsLen) >= p.options.maxConnections {
-				return nil, fmt.Errorf("%w: %w", ctx.Err(), ErrMaxConnectionsReached)
+				return nil, fmt.Errorf("%w: %w", ErrMaxConnectionsReached, ctx.Err())
 			}
 
 			// otherwise just return context error
