@@ -7,7 +7,7 @@ This is useful when you don't want to overload your servers with too many gRPC m
 single connection.
 
 
-# algorithm
+# how
 
 So how does it work? It's pretty simple. It uses reflect.Select to select on multiple channels.
 Two channels represent context and acquire timeout, and rest of channels represent connections.

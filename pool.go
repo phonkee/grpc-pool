@@ -146,7 +146,7 @@ main:
 
 			// if max connections is set, and we reached it, return error
 			if p.options.maxConnections > 0 && uint(connsLen) >= p.options.maxConnections {
-				return nil, fmt.Errorf("%w: %v", ctx.Err(), ErrMaxConnectionsReached)
+				return nil, fmt.Errorf("%w: %w", ErrMaxConnectionsReached, ctx.Err())
 			}
 
 			// otherwise just return context error
@@ -203,7 +203,7 @@ main:
 // Close closes the pool, connections and other background resources.
 //
 // After pool is closed, you cannot do anything with it.
-func (p *Pool) Close() error {
+func (p *Pool) Close(ctx context.Context) error {
 	if !p.isClosed.CompareAndSwap(true, false) {
 		return ErrAlreadyClosed
 	}
@@ -216,11 +216,28 @@ func (p *Pool) Close() error {
 	p.conns = nil
 	p.mutex.Unlock()
 
-	// run cleanup in goroutine eagerly
-	go p.cleanupConnections()
+	// close channel
+	c := make(chan struct{})
 
-	// bye bye
-	return nil
+	// check in background if there are no connections left, and if so, close the channel (and thus exit)
+	go func() {
+		p.cleanupConnections()
+		p.mutex.RLock()
+		if len(p.storage) == 0 {
+			close(c)
+		}
+		p.mutex.RUnlock()
+	}()
+
+	// run cleanup in goroutine eagerly
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-c:
+			return nil
+		}
+	}
 }
 
 // Forget directly removes connection from the pool.
