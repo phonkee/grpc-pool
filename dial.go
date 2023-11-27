@@ -37,3 +37,10 @@ import (
 // It adds stats information to have context about already established connections.
 // This is for case when you need to do more advanced client side load balancing based on already connected connections
 type DialFunc func(ctx context.Context, stats *Stats, opts ...grpc.DialOption) (*grpc.ClientConn, error)
+
+// StaticHostDialFunc returns DialFunc that always connects to the same host.
+func StaticHostDialFunc(address string) DialFunc {
+	return func(ctx context.Context, stats *Stats, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
+		return grpc.DialContext(ctx, address, opts...)
+	}
+}
