@@ -30,13 +30,13 @@ import "time"
 //
 // It supports default values in struct tags, so you can use it with https://github.com/mcuadros/go-defaults
 type Config struct {
-	AcquireTimeout     time.Duration `mapstructure:"acquire_timeout" defaults:"50ms"`
-	CleanupInterval    time.Duration `mapstructure:"cleanup_interval" defaults:"5s"`
-	MaxConcurrency     uint          `mapstructure:"max_concurrency" defaults:"1000"`
-	MaxConnections     uint          `mapstructure:"max_connections" defaults:"0"`
-	MaxIdleConnections uint          `mapstructure:"max_idle_connections" defaults:"0"`
-	MaxIdleTime        time.Duration `mapstructure:"max_idle_time" defaults:"60s"`
-	MaxLifetime        time.Duration `mapstructure:"max_lifetime" defaults:"30m"`
+	AcquireTimeout     time.Duration `mapstructure:"acquire_timeout" default:"50ms"`
+	CleanupInterval    time.Duration `mapstructure:"cleanup_interval" default:"5s"`
+	MaxConcurrency     uint          `mapstructure:"max_concurrency" default:"1000"`
+	MaxConnections     uint          `mapstructure:"max_connections" default:"0"`
+	MaxIdleConnections uint          `mapstructure:"max_idle_connections" default:"0"`
+	MaxIdleTime        time.Duration `mapstructure:"max_idle_time" default:"60s"`
+	MaxLifetime        time.Duration `mapstructure:"max_lifetime" default:"30m"`
 }
 
 // Options returns options by given config
