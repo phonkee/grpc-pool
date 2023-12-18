@@ -39,8 +39,11 @@ import (
 type DialFunc func(ctx context.Context, stats *Stats, opts ...grpc.DialOption) (*grpc.ClientConn, error)
 
 // StaticHostDialFunc returns DialFunc that always connects to the same host.
-func StaticHostDialFunc(address string) DialFunc {
+func StaticHostDialFunc(address string, options ...grpc.DialOption) DialFunc {
 	return func(ctx context.Context, stats *Stats, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
-		return grpc.DialContext(ctx, address, opts...)
+		dialOpts := make([]grpc.DialOption, 0, len(options)+len(opts))
+		dialOpts = append(dialOpts, options...)
+		dialOpts = append(dialOpts, opts...)
+		return grpc.DialContext(ctx, address, dialOpts...)
 	}
 }
